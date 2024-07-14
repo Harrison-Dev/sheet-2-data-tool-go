@@ -48,8 +48,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./nuget-exporter.exe
-          asset_name: nuget-exporter-windows.exe
+          asset_path: ./data-generator.exe
+          asset_name: data-generator-windows.exe
           asset_content_type: application/octet-stream
 
       - name: Upload macOS Asset
@@ -58,6 +58,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./nuget-exporter
-          asset_name: nuget-exporter-macos
+          asset_path: ./data-generator
+          asset_name: data-generator-macos
           asset_content_type: application/octet-stream
