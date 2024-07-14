@@ -19,7 +19,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
-          go-version: '1.20'
+          go-version: 1.19
 
       - name: Build for Windows
         run: .\scripts\build_windows.bat
@@ -31,7 +31,7 @@ jobs:
           path: data-generator.exe
 
   build-macos:
-    name: Build for macOS
+    name: Build for macOS (Universal)
     runs-on: macos-latest
     steps:
       - name: Checkout code
@@ -46,6 +46,9 @@ jobs:
         run: |
           chmod +x ./scripts/build_macos.sh
           ./scripts/build_macos.sh
+
+      - name: Set executable permissions
+        run: chmod +x data-generator
 
       - name: Upload macOS artifact
         uses: actions/upload-artifact@v2
@@ -89,5 +92,5 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./data-generator-macos/data-generator
-          asset_name: data-generator-macos-${{ github.event.inputs.version }}
+          asset_name: data-generator-macos-universal-${{ github.event.inputs.version }}
           asset_content_type: application/octet-stream
