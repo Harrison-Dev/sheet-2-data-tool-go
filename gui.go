@@ -1,8 +1,6 @@
 package main
 
 import (
-	"path/filepath"
-
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
@@ -14,7 +12,7 @@ import (
 
 var selectedFolder string
 
-func openGUI() {
+func runGUI() {
 	a := app.New()
 	w := a.NewWindow("Excel Schema Generator")
 
@@ -43,12 +41,12 @@ func openGUI() {
 			dialog.ShowError(err, w)
 			return
 		}
-		err = schema.SaveToFile(filepath.Join(selectedFolder, "schema.yml"))
+		err = schema.SaveToFile(schemaFileName)
 		if err != nil {
 			dialog.ShowError(err, w)
 			return
 		}
-		dialog.ShowInformation("Success", "schema.yml has been generated", w)
+		dialog.ShowInformation("Success", schemaFileName+" has been generated in the current working directory", w)
 	})
 
 	updateSchemaBtn := widget.NewButton("Update Schema", func() {
@@ -56,7 +54,7 @@ func openGUI() {
 			dialog.ShowInformation("Error", "Please select a folder first", w)
 			return
 		}
-		schema, err := excelschema.LoadSchemaFromFile(filepath.Join(selectedFolder, "schema.yml"))
+		schema, err := excelschema.LoadSchemaFromFile(schemaFileName)
 		if err != nil {
 			dialog.ShowError(err, w)
 			return
@@ -66,12 +64,12 @@ func openGUI() {
 			dialog.ShowError(err, w)
 			return
 		}
-		err = schema.SaveToFile(filepath.Join(selectedFolder, "schema.yml"))
+		err = schema.SaveToFile(schemaFileName)
 		if err != nil {
 			dialog.ShowError(err, w)
 			return
 		}
-		dialog.ShowInformation("Success", "schema.yml has been updated", w)
+		dialog.ShowInformation("Success", schemaFileName+" has been updated in the current working directory", w)
 	})
 
 	generateDataBtn := widget.NewButton("Generate Data", func() {
@@ -79,7 +77,7 @@ func openGUI() {
 			dialog.ShowInformation("Error", "Please select a folder first", w)
 			return
 		}
-		schema, err := excelschema.LoadSchemaFromFile(filepath.Join(selectedFolder, "schema.yml"))
+		schema, err := excelschema.LoadSchemaFromFile(schemaFileName)
 		if err != nil {
 			dialog.ShowError(err, w)
 			return
@@ -89,12 +87,12 @@ func openGUI() {
 			dialog.ShowError(err, w)
 			return
 		}
-		err = excelschema.SaveJSONOutput(output, filepath.Join(selectedFolder, "output.json"))
+		err = excelschema.SaveJSONOutput(output, dataFileName)
 		if err != nil {
 			dialog.ShowError(err, w)
 			return
 		}
-		dialog.ShowInformation("Success", "output.json has been generated", w)
+		dialog.ShowInformation("Success", dataFileName+" has been generated in the current working directory", w)
 	})
 
 	content := container.NewVBox(
