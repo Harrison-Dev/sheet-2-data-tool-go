@@ -6,23 +6,13 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/sqweek/dialog"
 	"github.com/xuri/excelize/v2"
 )
 
-func GenerateBasicSchema() (*SchemaInfo, error) {
-	folderPath, err := dialog.Directory().Title("請選擇要掃描的資料夾").Browse()
-	if err != nil {
-		return nil, fmt.Errorf("選擇資料夾時發生錯誤: %v", err)
-	}
-
-	if folderPath == "" {
-		return nil, fmt.Errorf("沒有選擇資料夾")
-	}
-
+func GenerateBasicSchemaFromFolder(folderPath string) (*SchemaInfo, error) {
 	schema := &SchemaInfo{Files: make(map[string]ExcelFileInfo)}
 
-	err = filepath.Walk(folderPath, func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(folderPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}

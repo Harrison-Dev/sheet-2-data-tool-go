@@ -1,11 +1,12 @@
 package excelschema
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strconv"
 
-	"github.com/sqweek/dialog"
 	"github.com/xuri/excelize/v2"
 )
 
@@ -19,16 +20,7 @@ type FieldInfo struct {
 	DataType string `json:"dataType"`
 }
 
-func GenerateData(schema *SchemaInfo) (*JSONOutput, error) {
-	excelDir, err := dialog.Directory().Title("請選擇包含 Excel 文件的資料夾").Browse()
-	if err != nil {
-		return nil, fmt.Errorf("選擇資料夾時發生錯誤: %v", err)
-	}
-
-	if excelDir == "" {
-		return nil, fmt.Errorf("沒有選擇資料夾")
-	}
-
+func GenerateDataFromFolder(schema *SchemaInfo, excelDir string) (*JSONOutput, error) {
 	output := &JSONOutput{
 		Schema: make(map[string][]FieldInfo),
 		Data:   make(map[string][]interface{}),
@@ -103,6 +95,19 @@ func GenerateData(schema *SchemaInfo) (*JSONOutput, error) {
 	return output, nil
 }
 
+func SaveJSONOutput(output *JSONOutput, filename string) error {
+	jsonData, err := json.MarshalIndent(output, "", "  ")
+	if err != nil {
+		return fmt.Errorf("轉換數據為 JSON 時發生錯誤: %v", err)
+	}
+
+	err = os.WriteFile(filename, jsonData, 0644)
+	if err != nil {
+		return fmt.Errorf("保存數據文件時發生錯誤: %v", err)
+	}
+
+	return nil
+}
 func convertValue(value string, dataType string) (interface{}, error) {
 	switch dataType {
 	case "string":
