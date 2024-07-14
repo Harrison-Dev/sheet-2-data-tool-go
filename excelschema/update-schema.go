@@ -4,20 +4,10 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/sqweek/dialog"
 	"github.com/xuri/excelize/v2"
 )
 
-func UpdateSchema(schema *SchemaInfo) error {
-	excelDir, err := dialog.Directory().Title("請選擇包含 Excel 文件的資料夾").Browse()
-	if err != nil {
-		return fmt.Errorf("選擇資料夾時發生錯誤: %v", err)
-	}
-
-	if excelDir == "" {
-		return fmt.Errorf("沒有選擇資料夾")
-	}
-
+func UpdateSchemaFromFolder(schema *SchemaInfo, excelDir string) error {
 	for filePath, fileInfo := range schema.Files {
 		fullPath := filepath.Join(excelDir, filePath)
 		f, err := excelize.OpenFile(fullPath)
