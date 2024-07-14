@@ -10,7 +10,7 @@ import (
 	"github.com/xuri/excelize/v2"
 )
 
-func GenerateSchema() (*SchemaInfo, error) {
+func GenerateBasicSchema() (*SchemaInfo, error) {
 	folderPath, err := dialog.Directory().Title("請選擇要掃描的資料夾").Browse()
 	if err != nil {
 		return nil, fmt.Errorf("選擇資料夾時發生錯誤: %v", err)
@@ -36,7 +36,7 @@ func GenerateSchema() (*SchemaInfo, error) {
 			if err != nil {
 				return fmt.Errorf("計算相對路徑時發生錯誤: %v", err)
 			}
-			excelInfo, err := processExcelFile(path)
+			excelInfo, err := processExcelFileBasic(path)
 			if err != nil {
 				fmt.Printf("警告: 處理檔案 %s 時發生錯誤: %v\n", relativePath, err)
 				return nil
@@ -53,7 +53,7 @@ func GenerateSchema() (*SchemaInfo, error) {
 	return schema, nil
 }
 
-func processExcelFile(filePath string) (ExcelFileInfo, error) {
+func processExcelFileBasic(filePath string) (ExcelFileInfo, error) {
 	f, err := excelize.OpenFile(filePath)
 	if err != nil {
 		return ExcelFileInfo{}, err
@@ -65,7 +65,7 @@ func processExcelFile(filePath string) (ExcelFileInfo, error) {
 	for _, sheetName := range f.GetSheetList() {
 		excelInfo.Sheets[sheetName] = SheetInfo{
 			OffsetHeader: 2,
-			ClassName:    sheetName, // 設置默認的 class name 為 sheet name
+			ClassName:    sheetName,
 			SheetName:    sheetName,
 		}
 	}
