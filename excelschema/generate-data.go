@@ -51,6 +51,18 @@ func GenerateData(schema *SchemaInfo) (*JSONOutput, error) {
 			}
 
 			if len(rows) >= sheetInfo.OffsetHeader {
+				// 檢查是否存在 int 類型的 id 欄位
+				idFieldIndex := -1
+				for i, dc := range sheetInfo.DataClass {
+					if dc.Name == "Id" {
+						idFieldIndex = i
+						break
+					}
+				}
+				if idFieldIndex == -1 {
+					return nil, fmt.Errorf("錯誤: sheet %s 中沒有找到 int 類型的 id 欄位", sheetName)
+				}
+
 				// 生成 schema 信息
 				fields := make([]FieldInfo, len(sheetInfo.DataClass))
 				for i, dc := range sheetInfo.DataClass {
