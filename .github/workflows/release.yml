@@ -9,9 +9,9 @@ on:
         default: 'v1.0.0'
 
 jobs:
-  build:
-    name: Build and Release
-    runs-on: ubuntu-latest
+  build-windows:
+    name: Build for Windows
+    runs-on: windows-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -19,17 +19,47 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
-          go-version: 1.19
+          go-version: '1.20'
 
       - name: Build for Windows
-        run: |
-          chmod +x scripts/build_windows.bat
-          ./scripts/build_windows.bat
+        run: .\scripts\build_windows.bat
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: data-generator-windows
+          path: data-generator.exe
+
+  build-macos:
+    name: Build for macOS
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '1.20'
 
       - name: Build for macOS
         run: |
-          chmod +x scripts/build_macos.sh
+          chmod +x ./scripts/build_macos.sh
           ./scripts/build_macos.sh
+
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: data-generator-macos
+          path: data-generator
+
+  create-release:
+    name: Create Release
+    needs: [build-windows, build-macos]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v2
 
       - name: Create Release
         id: create_release
@@ -48,8 +78,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./data-generator.exe
-          asset_name: data-generator-windows.exe
+          asset_path: ./data-generator-windows/data-generator.exe
+          asset_name: data-generator-windows-${{ github.event.inputs.version }}.exe
           asset_content_type: application/octet-stream
 
       - name: Upload macOS Asset
@@ -58,6 +88,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./data-generator
-          asset_name: data-generator-macos
+          asset_path: ./data-generator-macos/data-generator
+          asset_name: data-generator-macos-${{ github.event.inputs.version }}
           asset_content_type: application/octet-stream
