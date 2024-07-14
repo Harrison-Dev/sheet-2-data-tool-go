@@ -6,11 +6,17 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+type DataClassInfo struct {
+	Name     string `yaml:"name"`
+	DataType string `yaml:"data_type"`
+}
+
 type SheetInfo struct {
-	OffsetHeader int      `yaml:"offset_header"`
-	ClassName    string   `yaml:"class_name"`
-	SheetName    string   `yaml:"sheet_name"`
-	DataClass    []string `yaml:"data_class,omitempty"`
+	OffsetHeader int             `yaml:"offset_header"`
+	ClassName    string          `yaml:"class_name"`
+	SheetName    string          `yaml:"sheet_name"`
+	DataClass    []DataClassInfo `yaml:"data_class,omitempty"`
+	Data         [][]string      `yaml:"data,omitempty"`
 }
 
 type ExcelFileInfo struct {

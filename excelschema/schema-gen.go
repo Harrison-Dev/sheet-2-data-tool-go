@@ -27,13 +27,19 @@ func GenerateSchema() (*SchemaInfo, error) {
 			return err
 		}
 		if !info.IsDir() && (strings.HasSuffix(info.Name(), ".xlsx") || strings.HasSuffix(info.Name(), ".xls")) {
+			if strings.HasPrefix(info.Name(), "~$") {
+				fmt.Printf("跳過臨時文件: %s\n", info.Name())
+				return nil
+			}
+
 			relativePath, err := filepath.Rel(folderPath, path)
 			if err != nil {
 				return fmt.Errorf("計算相對路徑時發生錯誤: %v", err)
 			}
 			excelInfo, err := processExcelFile(path)
 			if err != nil {
-				return fmt.Errorf("處理檔案 %s 時發生錯誤: %v", relativePath, err)
+				fmt.Printf("警告: 處理檔案 %s 時發生錯誤: %v\n", relativePath, err)
+				return nil
 			}
 			schema.Files[relativePath] = excelInfo
 		}
@@ -58,8 +64,8 @@ func processExcelFile(filePath string) (ExcelFileInfo, error) {
 
 	for _, sheetName := range f.GetSheetList() {
 		excelInfo.Sheets[sheetName] = SheetInfo{
-			OffsetHeader: 2, // 預設值改為 2
-			ClassName:    "",
+			OffsetHeader: 2,
+			ClassName:    sheetName, // 設置默認的 class name 為 sheet name
 			SheetName:    sheetName,
 		}
 	}

@@ -22,18 +22,48 @@ func ReadFields(schema *SchemaInfo) error {
 		fullPath := filepath.Join(excelDir, filePath)
 		f, err := excelize.OpenFile(fullPath)
 		if err != nil {
-			return fmt.Errorf("打開 Excel 文件 %s 時發生錯誤: %v", filePath, err)
+			fmt.Printf("警告: 無法打開 Excel 文件 %s: %v\n", filePath, err)
+			continue
 		}
 
 		for sheetName, sheetInfo := range fileInfo.Sheets {
 			rows, err := f.GetRows(sheetName)
 			if err != nil {
-				f.Close()
-				return fmt.Errorf("讀取 sheet %s 時發生錯誤: %v", sheetName, err)
+				fmt.Printf("警告: 讀取 sheet %s 時發生錯誤: %v\n", sheetName, err)
+				continue
 			}
 
 			if len(rows) >= sheetInfo.OffsetHeader {
-				sheetInfo.DataClass = rows[sheetInfo.OffsetHeader-1]
+				headerRow := rows[sheetInfo.OffsetHeader-1]
+
+				excelFields := make(map[string]bool)
+				for _, fieldName := range headerRow {
+					excelFields[fieldName] = true
+				}
+
+				updatedDataClass := []DataClassInfo{}
+				for _, dataClass := range sheetInfo.DataClass {
+					if excelFields[dataClass.Name] {
+						updatedDataClass = append(updatedDataClass, dataClass)
+						delete(excelFields, dataClass.Name)
+					} else {
+						fmt.Printf("信息: 在 sheet %s 中刪除了字段 %s\n", sheetName, dataClass.Name)
+					}
+				}
+
+				for fieldName := range excelFields {
+					updatedDataClass = append(updatedDataClass, DataClassInfo{
+						Name:     fieldName,
+						DataType: "string",
+					})
+					fmt.Printf("信息: 在 sheet %s 中新增了字段 %s\n", sheetName, fieldName)
+				}
+
+				sheetInfo.DataClass = updatedDataClass
+
+				// 讀取實際數據
+				sheetInfo.Data = rows[sheetInfo.OffsetHeader:]
+
 				fileInfo.Sheets[sheetName] = sheetInfo
 			} else {
 				fmt.Printf("警告: sheet %s 的行數小於指定的 offset\n", sheetName)
@@ -56,8 +86,9 @@ func GenerateDataSchema(schema *SchemaInfo) (*SchemaInfo, error) {
 			dataSheetInfo := SheetInfo{
 				OffsetHeader: sheetInfo.OffsetHeader,
 				ClassName:    sheetInfo.ClassName,
-				SheetName:    sheetInfo.SheetName,
+				SheetName:    sheetName,
 				DataClass:    sheetInfo.DataClass,
+				Data:         sheetInfo.Data,
 			}
 			dataFileInfo.Sheets[sheetName] = dataSheetInfo
 		}

@@ -9,7 +9,7 @@ import (
 func main() {
 	fmt.Println("Excel Schema Tools")
 	fmt.Println("1. 生成 Schema")
-	fmt.Println("2. 讀取字段並更新 Schema")
+	fmt.Println("2. 讀取字段並更新 Schema 和數據")
 	fmt.Print("請選擇功能 (1/2): ")
 
 	var choice int
@@ -51,16 +51,16 @@ func main() {
 
 		dataSchema, err := excelschema.GenerateDataSchema(schema)
 		if err != nil {
-			fmt.Printf("生成 Data Schema 時發生錯誤: %v\n", err)
+			fmt.Printf("生成數據 Schema 時發生錯誤: %v\n", err)
 			return
 		}
 
-		err = dataSchema.SaveToFile("data_schema.yaml")
+		err = dataSchema.SaveToFile("data.yml")
 		if err != nil {
-			fmt.Printf("保存 Data Schema 時發生錯誤: %v\n", err)
+			fmt.Printf("保存數據文件時發生錯誤: %v\n", err)
 			return
 		}
-		fmt.Println("data_schema.yaml 已成功生成")
+		fmt.Println("data.yml 已成功生成，包含了實際數據")
 
 	default:
 		fmt.Println("無效的選擇")
