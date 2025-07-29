@@ -30,7 +30,7 @@ func GenerateDataFromFolder(schema *SchemaInfo, excelDir string) (*JSONOutput, e
 		fullPath := filepath.Join(excelDir, filePath)
 		f, err := excelize.OpenFile(fullPath)
 		if err != nil {
-			fmt.Printf("警告: 無法打開 Excel 文件 %s: %v\n", filePath, err)
+			fmt.Printf("Warning: unable to open Excel file %s: %v\n", filePath, err)
 			continue
 		}
 
@@ -38,12 +38,12 @@ func GenerateDataFromFolder(schema *SchemaInfo, excelDir string) (*JSONOutput, e
 			className := sheetInfo.ClassName
 			rows, err := f.GetRows(sheetName)
 			if err != nil {
-				fmt.Printf("警告: 讀取 sheet %s 時發生錯誤: %v\n", sheetName, err)
+				fmt.Printf("Warning: error reading sheet %s: %v\n", sheetName, err)
 				continue
 			}
 
 			if len(rows) >= sheetInfo.OffsetHeader {
-				// 檢查是否存在 int 類型的 id 欄位
+				// Check if there's an int type id field
 				idFieldIndex := -1
 				for i, dc := range sheetInfo.DataClass {
 					if dc.Name == "Id" {
@@ -52,10 +52,10 @@ func GenerateDataFromFolder(schema *SchemaInfo, excelDir string) (*JSONOutput, e
 					}
 				}
 				if idFieldIndex == -1 {
-					return nil, fmt.Errorf("錯誤: sheet %s 中沒有找到 int 類型的 id 欄位", sheetName)
+					return nil, fmt.Errorf("error: no int type id field found in sheet %s", sheetName)
 				}
 
-				// 生成 schema 信息
+				// Generate schema information
 				fields := make([]FieldInfo, len(sheetInfo.DataClass))
 				for i, dc := range sheetInfo.DataClass {
 					fields[i] = FieldInfo{
@@ -65,7 +65,7 @@ func GenerateDataFromFolder(schema *SchemaInfo, excelDir string) (*JSONOutput, e
 				}
 				output.Schema[className] = fields
 
-				// 生成數據
+				// Generate data
 				sheetData := make([]interface{}, 0)
 				for _, row := range rows[sheetInfo.OffsetHeader:] {
 					rowData := make(map[string]interface{})
@@ -74,8 +74,8 @@ func GenerateDataFromFolder(schema *SchemaInfo, excelDir string) (*JSONOutput, e
 							fieldInfo := sheetInfo.DataClass[i]
 							convertedValue, err := convertValue(value, fieldInfo.DataType)
 							if err != nil {
-								fmt.Printf("警告: 轉換字段 '%s' 的值時發生錯誤: %v\n", fieldInfo.Name, err)
-								rowData[fieldInfo.Name] = value // 使用原始字符串值
+								fmt.Printf("Warning: error converting field '%s' value: %v\n", fieldInfo.Name, err)
+								rowData[fieldInfo.Name] = value // Use original string value
 							} else {
 								rowData[fieldInfo.Name] = convertedValue
 							}
@@ -85,7 +85,7 @@ func GenerateDataFromFolder(schema *SchemaInfo, excelDir string) (*JSONOutput, e
 				}
 				output.Data[className] = sheetData
 			} else {
-				fmt.Printf("警告: sheet %s 的行數小於指定的 offset\n", sheetName)
+				fmt.Printf("Warning: sheet %s has fewer rows than specified offset\n", sheetName)
 			}
 		}
 
@@ -98,12 +98,12 @@ func GenerateDataFromFolder(schema *SchemaInfo, excelDir string) (*JSONOutput, e
 func SaveJSONOutput(output *JSONOutput, filename string) error {
 	jsonData, err := json.MarshalIndent(output, "", "  ")
 	if err != nil {
-		return fmt.Errorf("轉換數據為 JSON 時發生錯誤: %v", err)
+		return fmt.Errorf("error converting data to JSON: %v", err)
 	}
 
 	err = os.WriteFile(filename, jsonData, 0644)
 	if err != nil {
-		return fmt.Errorf("保存數據文件時發生錯誤: %v", err)
+		return fmt.Errorf("error saving data file: %v", err)
 	}
 
 	return nil

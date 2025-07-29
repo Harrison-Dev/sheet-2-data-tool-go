@@ -12,14 +12,14 @@ func UpdateSchemaFromFolder(schema *SchemaInfo, excelDir string) error {
 		fullPath := filepath.Join(excelDir, filePath)
 		f, err := excelize.OpenFile(fullPath)
 		if err != nil {
-			fmt.Printf("警告: 無法打開 Excel 文件 %s: %v\n", filePath, err)
+			fmt.Printf("Warning: unable to open Excel file %s: %v\n", filePath, err)
 			continue
 		}
 
 		for sheetName, sheetInfo := range fileInfo.Sheets {
 			rows, err := f.GetRows(sheetName)
 			if err != nil {
-				fmt.Printf("警告: 讀取 sheet %s 時發生錯誤: %v\n", sheetName, err)
+				fmt.Printf("Warning: error reading sheet %s: %v\n", sheetName, err)
 				continue
 			}
 
@@ -40,14 +40,14 @@ func UpdateSchemaFromFolder(schema *SchemaInfo, excelDir string) error {
 					} else {
 						sheetInfo.DataClass[i] = DataClassInfo{
 							Name:     fieldName,
-							DataType: "string", // 設置默認 data_type 為 string
+							DataType: "string", // Set default data_type to string
 						}
 					}
 				}
 
 				fileInfo.Sheets[sheetName] = sheetInfo
 			} else {
-				fmt.Printf("警告: sheet %s 的行數小於指定的 offset\n", sheetName)
+				fmt.Printf("Warning: sheet %s has fewer rows than specified offset\n", sheetName)
 			}
 		}
 
@@ -55,6 +55,6 @@ func UpdateSchemaFromFolder(schema *SchemaInfo, excelDir string) error {
 		f.Close()
 	}
 
-	fmt.Println("Schema 已更新。請在 schema.yml 文件中手動設置或修改 data_type。")
+	fmt.Println("Schema has been updated. Please manually set or modify data_type in schema.yml file.")
 	return nil
 }

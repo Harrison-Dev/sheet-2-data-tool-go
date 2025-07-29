@@ -18,17 +18,17 @@ func GenerateBasicSchemaFromFolder(folderPath string) (*SchemaInfo, error) {
 		}
 		if !info.IsDir() && (strings.HasSuffix(info.Name(), ".xlsx") || strings.HasSuffix(info.Name(), ".xls")) {
 			if strings.HasPrefix(info.Name(), "~$") {
-				fmt.Printf("跳過臨時文件: %s\n", info.Name())
+				fmt.Printf("Skipping temporary file: %s\n", info.Name())
 				return nil
 			}
 
 			relativePath, err := filepath.Rel(folderPath, path)
 			if err != nil {
-				return fmt.Errorf("計算相對路徑時發生錯誤: %v", err)
+				return fmt.Errorf("error calculating relative path: %v", err)
 			}
 			excelInfo, err := processExcelFileBasic(path)
 			if err != nil {
-				fmt.Printf("警告: 處理檔案 %s 時發生錯誤: %v\n", relativePath, err)
+				fmt.Printf("Warning: error processing file %s: %v\n", relativePath, err)
 				return nil
 			}
 			schema.Files[relativePath] = excelInfo
@@ -37,7 +37,7 @@ func GenerateBasicSchemaFromFolder(folderPath string) (*SchemaInfo, error) {
 	})
 
 	if err != nil {
-		return nil, fmt.Errorf("掃描資料夾時發生錯誤: %v", err)
+		return nil, fmt.Errorf("error scanning folder: %v", err)
 	}
 
 	return schema, nil

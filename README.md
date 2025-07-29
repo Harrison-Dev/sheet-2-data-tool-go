@@ -1,93 +1,93 @@
-# Excel Schema Generator - Excel 結構產生器
+# Excel Schema Generator
 
-一個用於從 Excel 檔案提取結構定義並生成 JSON 資料的工具。支援命令列介面（CLI）和圖形化介面（GUI）兩種操作模式。
+A tool for extracting schema definitions from Excel files and generating JSON data. Supports both Command Line Interface (CLI) and Graphical User Interface (GUI) operation modes.
 
-## 功能特色
+## Features
 
-- **自動結構提取**：自動分析 Excel 檔案並生成 YAML 格式的結構定義
-- **資料轉換**：根據結構定義將 Excel 資料轉換為 JSON 格式
-- **雙模式操作**：
-  - CLI 模式：適合自動化處理和批次作業
-  - GUI 模式：提供友善的視覺化操作介面
-- **結構更新**：支援增量更新已存在的結構定義
-- **跨平台支援**：支援 Windows、macOS（Intel 和 Apple Silicon）
+- **Automatic Schema Extraction**: Automatically analyzes Excel files and generates YAML format schema definitions
+- **Data Conversion**: Converts Excel data to JSON format based on schema definitions
+- **Dual Operation Modes**:
+  - CLI mode: Suitable for automation and batch processing
+  - GUI mode: Provides a user-friendly visual interface
+- **Schema Updates**: Supports incremental updates to existing schema definitions
+- **Cross-platform Support**: Supports Windows, macOS (Intel and Apple Silicon)
 
-## 安裝方式
+## Installation
 
-### 下載預編譯版本
-從 [Releases](https://github.com/yourusername/sheet-2-data-tool-go/releases) 頁面下載適合您作業系統的版本。
+### Download Pre-compiled Binaries
+Download the version suitable for your operating system from the [Releases](https://github.com/yourusername/sheet-2-data-tool-go/releases) page.
 
-### 從原始碼編譯
+### Build from Source
 
-需求：
-- Go 1.19 或更高版本
-- CGO 支援（GUI 模式需要）
+Requirements:
+- Go 1.19 or higher
+- CGO support (required for GUI mode)
 
 ```bash
-# 克隆專案
+# Clone the repository
 git clone https://github.com/yourusername/sheet-2-data-tool-go.git
 cd sheet-2-data-tool-go
 
-# 編譯
+# Build
 go build .
 ```
 
-## 使用方式
+## Usage
 
-### GUI 模式
+### GUI Mode
 
-直接執行程式即可啟動圖形化介面：
+Launch the graphical interface by running the program without arguments:
 
 ```bash
 ./data-generator
 ```
 
-在 GUI 中可以：
-1. 選擇包含 Excel 檔案的資料夾
-2. 指定結構定義檔案的儲存位置
-3. 設定 JSON 輸出資料夾
-4. 點擊按鈕執行相應操作
+In the GUI, you can:
+1. Select the folder containing Excel files
+2. Specify the location to save schema definition files
+3. Set the JSON output folder
+4. Click buttons to execute corresponding operations
 
-### CLI 模式
+### CLI Mode
 
-#### 1. 生成初始結構定義
+#### 1. Generate Initial Schema
 
-從 Excel 檔案夾生成基礎結構定義：
+Generate basic schema definition from Excel folder:
 
 ```bash
 ./data-generator generate -folder /path/to/excel/files
 ```
 
-這會在當前目錄生成 `schema.yml` 檔案。
+This will generate a `schema.yml` file in the current directory.
 
-#### 2. 更新結構定義
+#### 2. Update Schema
 
-當 Excel 檔案有變更時，更新現有的結構定義：
+Update existing schema when Excel files have changed:
 
 ```bash
 ./data-generator update -folder /path/to/excel/files
 ```
 
-#### 3. 生成 JSON 資料
+#### 3. Generate JSON Data
 
-根據結構定義從 Excel 檔案提取資料：
+Extract data from Excel files based on schema:
 
 ```bash
 ./data-generator data -folder /path/to/excel/files
 ```
 
-這會在當前目錄生成 `output.json` 檔案。
+This will generate an `output.json` file in the current directory.
 
-## 工作流程
+## Workflow
 
-1. **初始化**：使用 `generate` 命令建立初始結構定義
-2. **自訂**：編輯 `schema.yml` 調整資料類型和欄位名稱
-3. **更新**：當 Excel 結構變更時使用 `update` 命令
-4. **輸出**：使用 `data` 命令生成最終的 JSON 資料
+1. **Initialize**: Use the `generate` command to create initial schema
+2. **Customize**: Edit `schema.yml` to adjust data types and field names
+3. **Update**: Use the `update` command when Excel structure changes
+4. **Output**: Use the `data` command to generate final JSON data
 
-## 結構定義格式
+## Schema Format
 
-`schema.yml` 檔案結構範例：
+Example `schema.yml` file structure:
 
 ```yaml
 files:
@@ -106,62 +106,62 @@ files:
             data_type: "number"
 ```
 
-### 欄位說明
+### Field Descriptions
 
-- `offset_header`：標題行的偏移量（0 表示第一行）
-- `class_name`：資料類別名稱
-- `sheet_name`：Excel 工作表名稱
-- `data_class`：欄位定義列表
-  - `name`：欄位名稱
-  - `data_type`：資料類型（string、number、boolean 等）
+- `offset_header`: Offset of the header row (0 means first row)
+- `class_name`: Data class name
+- `sheet_name`: Excel sheet name
+- `data_class`: Field definition list
+  - `name`: Field name
+  - `data_type`: Data type (string, number, boolean, etc.)
 
-## 建置專案
+## Building the Project
 
 ### macOS
 
 ```bash
-# 建置通用二進位檔（支援 Intel 和 Apple Silicon）
+# Build universal binary (supports Intel and Apple Silicon)
 ./scripts/build_macos.sh
 ```
 
 ### Windows
 
 ```bash
-# 建置 Windows 執行檔
+# Build Windows executable
 scripts\build_windows.bat
 ```
 
-## 專案結構
+## Project Structure
 
 ```
 sheet-2-data-tool-go/
-├── main.go              # 主程式入口
-├── gui.go               # GUI 介面實作
-├── config.go            # 設定檔管理
-├── excelschema/         # 核心功能套件
-│   ├── models.go        # 資料結構定義
-│   ├── generate-schema.go # 結構生成邏輯
-│   ├── update-schema.go   # 結構更新邏輯
-│   └── generate-data.go   # 資料生成邏輯
-└── scripts/             # 建置腳本
+├── main.go              # Main entry point
+├── gui.go               # GUI implementation
+├── config.go            # Configuration management
+├── excelschema/         # Core functionality package
+│   ├── models.go        # Data structure definitions
+│   ├── generate-schema.go # Schema generation logic
+│   ├── update-schema.go   # Schema update logic
+│   └── generate-data.go   # Data generation logic
+└── scripts/             # Build scripts
     ├── build_macos.sh
     └── build_windows.bat
 ```
 
-## 依賴套件
+## Dependencies
 
-- [fyne.io/fyne/v2](https://fyne.io/) - GUI 框架
-- [github.com/xuri/excelize/v2](https://github.com/qax-os/excelize) - Excel 檔案處理
-- [gopkg.in/yaml.v2](https://gopkg.in/yaml.v2) - YAML 解析
+- [fyne.io/fyne/v2](https://fyne.io/) - GUI framework
+- [github.com/xuri/excelize/v2](https://github.com/qax-os/excelize) - Excel file processing
+- [gopkg.in/yaml.v2](https://gopkg.in/yaml.v2) - YAML parsing
 
-## 授權
+## License
 
-[請加入您的授權資訊]
+[Please add your license information]
 
-## 貢獻
+## Contributing
 
-歡迎提交 Issue 和 Pull Request！
+Issues and Pull Requests are welcome!
 
-## 作者
+## Author
 
-[請加入作者資訊]
+[Please add author information]

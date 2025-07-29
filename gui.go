@@ -188,12 +188,12 @@ func (g *GUI) showSuccess(message string) {
 
 	g.statusLabel.SetText(message)
 
-	// 检查消息中是否包含文件路径
+	// Check if message contains file path
 	if filepath.Ext(message) == ".yml" || filepath.Ext(message) == ".json" {
-		// 提取文件路径
+		// Extract file path
 		path := message[strings.LastIndex(message, ":")+2:]
 
-		// 更新超链接
+		// Update hyperlink
 		g.linkLabel.SetText("Open containing folder")
 		g.linkLabel.OnTapped = func() {
 			dir := filepath.Dir(path)
@@ -203,7 +203,7 @@ func (g *GUI) showSuccess(message string) {
 			}
 		}
 	} else {
-		// 如果消息中没有文件路径，隐藏链接
+		// If no file path in message, hide link
 		g.linkLabel.SetText("")
 		g.linkLabel.OnTapped = nil
 	}
@@ -216,7 +216,7 @@ func (g *GUI) openFolder(path string) error {
 		cmd = exec.Command("open", path)
 	case "windows":
 		cmd = exec.Command("explorer", path)
-	default: // 假设是 Linux
+	default: // Assume Linux
 		cmd = exec.Command("xdg-open", path)
 	}
 	return cmd.Start()
