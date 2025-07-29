@@ -1,96 +1,81 @@
-name: Manual Release
+name: Release Go Binary
 
 on:
+  release:
+    types: [created]
   workflow_dispatch:
     inputs:
-      version:
-        description: 'Version number (e.g., v1.0.0)'
+      tag_name:
+        description: 'Tag name for release'
         required: true
-        default: 'v1.0.0'
+
+permissions:
+    contents: write
+    packages: write
 
 jobs:
-  build-windows:
-    name: Build for Windows
-    runs-on: windows-latest
+  releases-matrix:
+    name: Release Go Binary
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # build and publish in parallel: windows/amd64, darwin/amd64, darwin/arm64
+        goos: [windows, darwin]
+        goarch: [amd64, arm64]
+        exclude:
+          - goarch: arm64
+            goos: windows
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Set up Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: 1.19
-
-      - name: Build for Windows
-        run: .\scripts\build_windows.bat
-
-      - name: Upload Windows artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: data-generator-windows
-          path: data-generator.exe
-
-  build-macos:
-    name: Build for macOS (Universal)
+    - uses: actions/checkout@v4
+    
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.19'
+    
+    - name: Build binary
+      env:
+        GOOS: ${{ matrix.goos }}
+        GOARCH: ${{ matrix.goarch }}
+        CGO_ENABLED: 0
+      run: |
+        mkdir -p bin
+        if [ "$GOOS" = "windows" ]; then
+          go build -o bin/excel-schema-generator.exe .
+        else
+          go build -o bin/excel-schema-generator .
+        fi
+    
+    - name: Upload to release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          bin/excel-schema-generator*
+        tag_name: ${{ github.event.inputs.tag_name || github.ref_name }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  
+  # Build universal binary for macOS
+  build-macos-universal:
+    name: Build macOS Universal Binary
     runs-on: macos-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Set up Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: 1.19
-
-      - name: Build for macOS
-        run: |
-          chmod +x ./scripts/build_macos.sh
-          ./scripts/build_macos.sh
-
-      - name: Set executable permissions
-        run: chmod +x data-generator
-
-      - name: Upload macOS artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: data-generator-macos
-          path: data-generator
-
-  create-release:
-    name: Create Release
-    needs: [build-windows, build-macos]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v2
-
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.event.inputs.version }}
-          release_name: Release ${{ github.event.inputs.version }}
-          draft: false
-          prerelease: false
-
-      - name: Upload Windows Asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./data-generator-windows/data-generator.exe
-          asset_name: data-generator-windows-${{ github.event.inputs.version }}.exe
-          asset_content_type: application/octet-stream
-
-      - name: Upload macOS Asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./data-generator-macos/data-generator
-          asset_name: data-generator-macos-universal-${{ github.event.inputs.version }}
-          asset_content_type: application/octet-stream
+    - uses: actions/checkout@v4
+    
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.19'
+    
+    - name: Build Universal Binary
+      run: |
+        chmod +x ./scripts/build_macos.sh
+        ./scripts/build_macos.sh
+    
+    - name: Upload to release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: bin/excel-schema-generator
+        tag_name: ${{ github.event.inputs.tag_name || github.ref_name }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

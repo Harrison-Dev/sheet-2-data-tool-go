@@ -1,0 +1,44 @@
+# Binary output directory
+/bin/
+
+# Build artifacts
+excel-schema-generator
+excel-schema-generator-*
+data-generator
+data-generator-*
+*.exe
+
+# Go build cache
+*.o
+*.a
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of go coverage tool
+*.out
+
+# Dependency directories
+vendor/
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS specific files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Project specific
+config.json
+schema.yml
+output.json
+CLAUDE.md

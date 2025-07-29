@@ -1,2 +1,3 @@
 @echo off
-go build -o data-generator.exe .
+if not exist bin mkdir bin
+go build -o bin\excel-schema-generator.exe .
