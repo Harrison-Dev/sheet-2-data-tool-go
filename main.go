@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"excel-schema-generator/excelschema"
@@ -25,6 +26,7 @@ func main() {
 	// Common flags
 	var (
 		folderPath string
+		outputPath string
 		verbose    bool
 		logLevel   string
 		logFormat  string
@@ -32,16 +34,19 @@ func main() {
 
 	// Single operation flags
 	generateCmd.StringVar(&folderPath, "folder", "", "Path to the Excel files folder")
+	generateCmd.StringVar(&outputPath, "output", "", "Path to the output directory (optional, defaults to current working directory)")
 	generateCmd.BoolVar(&verbose, "verbose", false, "Enable verbose logging")
 	generateCmd.StringVar(&logLevel, "log-level", "info", "Log level (debug, info, warn, error)")
 	generateCmd.StringVar(&logFormat, "log-format", "text", "Log format (text, json)")
 
 	updateCmd.StringVar(&folderPath, "folder", "", "Path to the Excel files folder")
+	updateCmd.StringVar(&outputPath, "output", "", "Path to the output directory (optional, defaults to current working directory)")
 	updateCmd.BoolVar(&verbose, "verbose", false, "Enable verbose logging")
 	updateCmd.StringVar(&logLevel, "log-level", "info", "Log level (debug, info, warn, error)")
 	updateCmd.StringVar(&logFormat, "log-format", "text", "Log format (text, json)")
 
 	dataCmd.StringVar(&folderPath, "folder", "", "Path to the Excel files folder")
+	dataCmd.StringVar(&outputPath, "output", "", "Path to the output directory (optional, defaults to current working directory)")
 	dataCmd.BoolVar(&verbose, "verbose", false, "Enable verbose logging")
 	dataCmd.StringVar(&logLevel, "log-level", "info", "Log level (debug, info, warn, error)")
 	dataCmd.StringVar(&logFormat, "log-format", "text", "Log format (text, json)")
@@ -78,11 +83,11 @@ func main() {
 	
 	// Execute the appropriate command
 	if generateCmd.Parsed() {
-		generateBasicSchema(folderPath)
+		generateBasicSchema(folderPath, outputPath)
 	} else if updateCmd.Parsed() {
-		updateSchema(folderPath)
+		updateSchema(folderPath, outputPath)
 	} else if dataCmd.Parsed() {
-		generateData(folderPath)
+		generateData(folderPath, outputPath)
 	}
 }
 
@@ -116,8 +121,15 @@ func parseLogLevel(level string) slog.Level {
 	}
 }
 
-func generateBasicSchema(folderPath string) {
-	logger.Info("Starting schema generation", "folder", folderPath)
+func getOutputFilePath(outputPath, fileName string) string {
+	if outputPath == "" {
+		return fileName
+	}
+	return filepath.Join(outputPath, fileName)
+}
+
+func generateBasicSchema(folderPath, outputPath string) {
+	logger.Info("Starting schema generation", "folder", folderPath, "output", outputPath)
 	
 	schema, err := excelschema.GenerateBasicSchemaFromFolder(folderPath)
 	if err != nil {
@@ -126,23 +138,34 @@ func generateBasicSchema(folderPath string) {
 		return
 	}
 	
-	err = schema.SaveToFile(schemaFileName)
+	// Create output directory if it doesn't exist
+	if outputPath != "" {
+		if err := os.MkdirAll(outputPath, 0755); err != nil {
+			logger.Error("Failed to create output directory", "path", outputPath, "error", err)
+			fmt.Printf("Error creating output directory: %v\n", err)
+			return
+		}
+	}
+	
+	outputFile := getOutputFilePath(outputPath, schemaFileName)
+	err = schema.SaveToFile(outputFile)
 	if err != nil {
-		logger.Error("Failed to save schema", "file", schemaFileName, "error", err)
+		logger.Error("Failed to save schema", "file", outputFile, "error", err)
 		fmt.Printf("Error saving schema: %v\n", err)
 		return
 	}
 	
-	logger.Info("Schema generation completed", "file", schemaFileName)
-	fmt.Printf("%s has been generated successfully in the current working directory\n", schemaFileName)
+	logger.Info("Schema generation completed", "file", outputFile)
+	fmt.Printf("%s has been generated successfully\n", outputFile)
 }
 
-func updateSchema(folderPath string) {
-	logger.Info("Starting schema update", "folder", folderPath, "schema", schemaFileName)
+func updateSchema(folderPath, outputPath string) {
+	outputFile := getOutputFilePath(outputPath, schemaFileName)
+	logger.Info("Starting schema update", "folder", folderPath, "schema", outputFile)
 	
-	schema, err := excelschema.LoadSchemaFromFile(schemaFileName)
+	schema, err := excelschema.LoadSchemaFromFile(outputFile)
 	if err != nil {
-		logger.Error("Failed to load schema", "file", schemaFileName, "error", err)
+		logger.Error("Failed to load schema", "file", outputFile, "error", err)
 		fmt.Printf("Error loading schema: %v\n", err)
 		return
 	}
@@ -154,23 +177,34 @@ func updateSchema(folderPath string) {
 		return
 	}
 	
-	err = schema.SaveToFile(schemaFileName)
+	// Create output directory if it doesn't exist
+	if outputPath != "" {
+		if err := os.MkdirAll(outputPath, 0755); err != nil {
+			logger.Error("Failed to create output directory", "path", outputPath, "error", err)
+			fmt.Printf("Error creating output directory: %v\n", err)
+			return
+		}
+	}
+	
+	err = schema.SaveToFile(outputFile)
 	if err != nil {
-		logger.Error("Failed to save updated schema", "file", schemaFileName, "error", err)
+		logger.Error("Failed to save updated schema", "file", outputFile, "error", err)
 		fmt.Printf("Error saving updated schema: %v\n", err)
 		return
 	}
 	
-	logger.Info("Schema update completed", "file", schemaFileName)
-	fmt.Printf("%s has been updated successfully in the current working directory\n", schemaFileName)
+	logger.Info("Schema update completed", "file", outputFile)
+	fmt.Printf("%s has been updated successfully\n", outputFile)
 }
 
-func generateData(folderPath string) {
-	logger.Info("Starting data generation", "folder", folderPath, "schema", schemaFileName)
+func generateData(folderPath, outputPath string) {
+	schemaFile := getOutputFilePath(outputPath, schemaFileName)
+	outputFile := getOutputFilePath(outputPath, dataFileName)
+	logger.Info("Starting data generation", "folder", folderPath, "schema", schemaFile)
 	
-	schema, err := excelschema.LoadSchemaFromFile(schemaFileName)
+	schema, err := excelschema.LoadSchemaFromFile(schemaFile)
 	if err != nil {
-		logger.Error("Failed to load schema", "file", schemaFileName, "error", err)
+		logger.Error("Failed to load schema", "file", schemaFile, "error", err)
 		fmt.Printf("Error loading schema: %v\n", err)
 		return
 	}
@@ -182,13 +216,22 @@ func generateData(folderPath string) {
 		return
 	}
 	
-	err = excelschema.SaveJSONOutput(output, dataFileName)
+	// Create output directory if it doesn't exist
+	if outputPath != "" {
+		if err := os.MkdirAll(outputPath, 0755); err != nil {
+			logger.Error("Failed to create output directory", "path", outputPath, "error", err)
+			fmt.Printf("Error creating output directory: %v\n", err)
+			return
+		}
+	}
+	
+	err = excelschema.SaveJSONOutput(output, outputFile)
 	if err != nil {
-		logger.Error("Failed to save data", "file", dataFileName, "error", err)
+		logger.Error("Failed to save data", "file", outputFile, "error", err)
 		fmt.Printf("Error saving data: %v\n", err)
 		return
 	}
 	
-	logger.Info("Data generation completed", "file", dataFileName)
-	fmt.Printf("%s has been generated successfully in the current working directory\n", dataFileName)
+	logger.Info("Data generation completed", "file", outputFile)
+	fmt.Printf("%s has been generated successfully\n", outputFile)
 }

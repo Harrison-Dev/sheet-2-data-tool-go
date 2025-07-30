@@ -44,33 +44,52 @@ func GenerateDataFromFolder(schema *SchemaInfo, excelDir string) (*JSONOutput, e
 			}
 
 			if len(rows) >= sheetInfo.OffsetHeader {
-				// Check if there's an int type id field
-				idFieldIndex := -1
-				for i, dc := range sheetInfo.DataClass {
+				// Check if there's an Id field
+				hasIdField := false
+				for _, dc := range sheetInfo.DataClass {
 					if dc.Name == "Id" {
-						idFieldIndex = i
+						hasIdField = true
 						break
 					}
 				}
-				if idFieldIndex == -1 {
-					logger.Error("No ID field found", "sheet", sheetName, "file", filePath)
-					return nil, fmt.Errorf("error: no int type id field found in sheet %s", sheetName)
-				}
 
 				// Generate schema information
-				fields := make([]FieldInfo, len(sheetInfo.DataClass))
-				for i, dc := range sheetInfo.DataClass {
-					fields[i] = FieldInfo{
-						Name:     dc.Name,
-						DataType: dc.DataType,
+				var fields []FieldInfo
+				if !hasIdField {
+					// Auto-generate Id field if not present
+					logger.Info("No Id field found, auto-generating Id field", "sheet", sheetName, "file", filePath)
+					fields = make([]FieldInfo, len(sheetInfo.DataClass)+1)
+					fields[0] = FieldInfo{
+						Name:     "Id",
+						DataType: "int",
+					}
+					for i, dc := range sheetInfo.DataClass {
+						fields[i+1] = FieldInfo{
+							Name:     dc.Name,
+							DataType: dc.DataType,
+						}
+					}
+				} else {
+					fields = make([]FieldInfo, len(sheetInfo.DataClass))
+					for i, dc := range sheetInfo.DataClass {
+						fields[i] = FieldInfo{
+							Name:     dc.Name,
+							DataType: dc.DataType,
+						}
 					}
 				}
 				output.Schema[className] = fields
 
 				// Generate data
 				sheetData := make([]interface{}, 0)
-				for _, row := range rows[sheetInfo.OffsetHeader:] {
+				for rowIndex, row := range rows[sheetInfo.OffsetHeader:] {
 					rowData := make(map[string]interface{})
+					
+					if !hasIdField {
+						// Add auto-generated Id starting from 0
+						rowData["Id"] = rowIndex
+					}
+					
 					for i, value := range row {
 						if i < len(sheetInfo.DataClass) {
 							fieldInfo := sheetInfo.DataClass[i]

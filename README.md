@@ -142,7 +142,7 @@ files:
   - `name`: Field name (case-sensitive)
   - `data_type`: Data type (string, int, float, bool)
 
-**Important**: Each sheet must have an "Id" field with data_type "int" for data generation to work properly.
+**Important**: If a sheet doesn't have an "Id" field in the schema, the system will automatically generate one with consecutive integers starting from 0.
 
 ## 🔧 Advanced Features
 
@@ -240,7 +240,7 @@ sheet-2-data-tool-go/
 
 ### Common Issues
 
-1. **"No ID field found" Error**: Ensure each sheet has an "Id" column with data_type "int" in the schema
+1. **Auto-generated ID**: When no "Id" field is defined in the schema, the system automatically generates one starting from 0
 2. **Permission Errors**: Ensure the application has read/write permissions for the specified directories
 3. **Empty Output**: Check that the offset_header value correctly points to your header row
 

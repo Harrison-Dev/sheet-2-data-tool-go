@@ -147,19 +147,42 @@ func TestGenerateDataFromFolder_NoIdField(t *testing.T) {
 	sheets := map[string][][]string{
 		"Sheet1": {
 			{"name", "value"},
-			{"Test", "123"},
+			{"Test1", "123"},
+			{"Test2", "456"},
 		},
 	}
 	createTestExcelFile(t, excelFile, sheets)
 	
-	// Generate data - should fail due to missing Id field
-	_, err := GenerateDataFromFolder(schema, tempDir)
-	if err == nil {
-		t.Error("Expected error for missing Id field, got nil")
+	// Generate data - should succeed with auto-generated Id field
+	output, err := GenerateDataFromFolder(schema, tempDir)
+	if err != nil {
+		t.Fatalf("Expected no error, got: %v", err)
 	}
 	
-	if !contains(err.Error(), "no int type id field found") && !contains(err.Error(), "no int type id field found") {
-		t.Errorf("Expected error about missing Id field, got: %v", err)
+	// Check schema has auto-generated Id field
+	schemaFields := output.Schema["TestData"]
+	if len(schemaFields) != 3 {
+		t.Errorf("Expected 3 fields in schema (including auto-generated Id), got %d", len(schemaFields))
+	}
+	
+	if schemaFields[0].Name != "Id" || schemaFields[0].DataType != "int" {
+		t.Errorf("Expected first field to be auto-generated Id field, got: %+v", schemaFields[0])
+	}
+	
+	// Check data has auto-generated Id starting from 0
+	data := output.Data["TestData"]
+	if len(data) != 2 {
+		t.Errorf("Expected 2 rows of data, got %d", len(data))
+	}
+	
+	firstRow := data[0].(map[string]interface{})
+	if id, ok := firstRow["Id"].(int); !ok || id != 0 {
+		t.Errorf("Expected first row Id to be 0, got %v", firstRow["Id"])
+	}
+	
+	secondRow := data[1].(map[string]interface{})
+	if id, ok := secondRow["Id"].(int); !ok || id != 1 {
+		t.Errorf("Expected second row Id to be 1, got %v", secondRow["Id"])
 	}
 }
 
