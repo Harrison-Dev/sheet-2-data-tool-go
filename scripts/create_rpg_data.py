@@ -9,7 +9,7 @@ def create_characters_excel():
     ws.title = "Characters"
     
     # Headers
-    headers = ["ID", "Name", "Class", "Level", "HP", "MP", "Strength", "Agility", "Intelligence", "Luck", "Weapon", "Armor"]
+    headers = ["ID", "Name", "JobClass", "Level", "HP", "MP", "Strength", "Agility", "Intelligence", "Luck", "Weapon", "Armor"]
     for i, header in enumerate(headers, 1):
         ws.cell(row=1, column=i, value=header)
     
@@ -39,7 +39,7 @@ def create_items_excel():
     ws_weapons = wb.active
     ws_weapons.title = "Weapons"
     
-    weapon_headers = ["ID", "Name", "Type", "Damage", "Durability", "Weight", "Value", "Rarity", "Requirements"]
+    weapon_headers = ["ID", "Name", "WeaponType", "Damage", "Durability", "Weight", "Value", "Rarity", "Requirements"]
     for i, header in enumerate(weapon_headers, 1):
         ws_weapons.cell(row=1, column=i, value=header)
     
@@ -60,7 +60,7 @@ def create_items_excel():
     
     # Armor sheet
     ws_armor = wb.create_sheet("Armor")
-    armor_headers = ["ID", "Name", "Type", "Defense", "Weight", "Value", "Rarity", "Special_Effect"]
+    armor_headers = ["ID", "Name", "ArmorType", "Defense", "Weight", "Value", "Rarity", "Special_Effect"]
     for i, header in enumerate(armor_headers, 1):
         ws_armor.cell(row=1, column=i, value=header)
     
@@ -110,7 +110,7 @@ def create_skills_excel():
     
     # Combat Skills
     ws_combat = wb.create_sheet("Combat_Skills")
-    combat_headers = ["ID", "Name", "Type", "Stamina_Cost", "Damage_Multiplier", "Accuracy", "Level_Required", "Weapon_Type", "Description"]
+    combat_headers = ["ID", "Name", "SkillType", "Stamina_Cost", "Damage_Multiplier", "Accuracy", "Level_Required", "Weapon_Type", "Description"]
     for i, header in enumerate(combat_headers, 1):
         ws_combat.cell(row=1, column=i, value=header)
     
@@ -137,7 +137,7 @@ def create_monsters_excel():
     ws = wb.active
     ws.title = "Monsters"
     
-    headers = ["ID", "Name", "Type", "Level", "HP", "MP", "Attack", "Defense", "Speed", "EXP_Reward", "Gold_Drop", "Special_Abilities", "Weakness"]
+    headers = ["ID", "Name", "MonsterType", "Level", "HP", "MP", "Attack", "Defense", "Speed", "EXP_Reward", "Gold_Drop", "Special_Abilities", "Weakness"]
     for i, header in enumerate(headers, 1):
         ws.cell(row=1, column=i, value=header)
     
@@ -186,7 +186,7 @@ def create_quests_excel():
     
     # Side Quests
     ws_side = wb.create_sheet("Side_Quests")
-    side_headers = ["ID", "Name", "Description", "Level_Required", "EXP_Reward", "Gold_Reward", "Item_Reward", "Type", "Repeatable"]
+    side_headers = ["ID", "Name", "Description", "Level_Required", "EXP_Reward", "Gold_Reward", "Item_Reward", "QuestType", "Repeatable"]
     for i, header in enumerate(side_headers, 1):
         ws_side.cell(row=1, column=i, value=header)
     
