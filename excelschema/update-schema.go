@@ -24,7 +24,7 @@ func UpdateSchemaFromFolder(schema *SchemaInfo, excelDir string) error {
 			}
 
 			if len(rows) >= sheetInfo.OffsetHeader {
-				headerRow := rows[sheetInfo.OffsetHeader-1]
+				headerRow := rows[0] // 表頭永遠在第0行（第1行）
 
 				// 保留現有的 DataClass 信息
 				existingDataClass := make(map[string]DataClassInfo)

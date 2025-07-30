@@ -1,6 +1,6 @@
 module excel-schema-generator
 
-go 1.19
+go 1.21
 
 require (
 	fyne.io/fyne/v2 v2.4.5
@@ -10,7 +10,11 @@ require (
 )
 
 require (
-	fyne.io/fyne v1.4.3
+	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
+	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
+)
+
+require (
 	fyne.io/systray v1.10.1-0.20231115130155-104f5ef7839e // indirect
 	github.com/TheTitanrain/w32 v0.0.0-20180517000239-4f5cfb03fabf // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect

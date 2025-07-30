@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"excel-schema-generator/pkg/logger"
 	"github.com/xuri/excelize/v2"
@@ -44,10 +45,10 @@ func GenerateDataFromFolder(schema *SchemaInfo, excelDir string) (*JSONOutput, e
 			}
 
 			if len(rows) >= sheetInfo.OffsetHeader {
-				// Check if there's an Id field
+				// Check if there's an Id field (case insensitive)
 				hasIdField := false
 				for _, dc := range sheetInfo.DataClass {
-					if dc.Name == "Id" {
+					if strings.ToLower(dc.Name) == "id" {
 						hasIdField = true
 						break
 					}

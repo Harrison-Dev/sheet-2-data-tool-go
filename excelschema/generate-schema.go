@@ -57,7 +57,7 @@ func processExcelFileBasic(filePath string) (ExcelFileInfo, error) {
 
 	for _, sheetName := range f.GetSheetList() {
 		excelInfo.Sheets[sheetName] = SheetInfo{
-			OffsetHeader: 2,
+			OffsetHeader: 1,
 			ClassName:    sheetName,
 			SheetName:    sheetName,
 		}
