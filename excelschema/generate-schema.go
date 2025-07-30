@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"excel-schema-generator/pkg/logger"
 	"github.com/xuri/excelize/v2"
 )
 
@@ -18,17 +19,18 @@ func GenerateBasicSchemaFromFolder(folderPath string) (*SchemaInfo, error) {
 		}
 		if !info.IsDir() && (strings.HasSuffix(info.Name(), ".xlsx") || strings.HasSuffix(info.Name(), ".xls")) {
 			if strings.HasPrefix(info.Name(), "~$") {
-				fmt.Printf("Skipping temporary file: %s\n", info.Name())
+				logger.Debug("Skipping temporary file", "file", info.Name())
 				return nil
 			}
 
 			relativePath, err := filepath.Rel(folderPath, path)
 			if err != nil {
+				logger.Error("Failed to calculate relative path", "path", path, "folder", folderPath, "error", err)
 				return fmt.Errorf("error calculating relative path: %v", err)
 			}
 			excelInfo, err := processExcelFileBasic(path)
 			if err != nil {
-				fmt.Printf("Warning: error processing file %s: %v\n", relativePath, err)
+				logger.Warn("Error processing file", "file", relativePath, "error", err)
 				return nil
 			}
 			schema.Files[relativePath] = excelInfo
@@ -37,6 +39,7 @@ func GenerateBasicSchemaFromFolder(folderPath string) (*SchemaInfo, error) {
 	})
 
 	if err != nil {
+		logger.Error("Failed to scan folder", "folder", folderPath, "error", err)
 		return nil, fmt.Errorf("error scanning folder: %v", err)
 	}
 

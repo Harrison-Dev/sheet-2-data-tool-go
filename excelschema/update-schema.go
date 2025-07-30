@@ -1,9 +1,9 @@
 package excelschema
 
 import (
-	"fmt"
 	"path/filepath"
 
+	"excel-schema-generator/pkg/logger"
 	"github.com/xuri/excelize/v2"
 )
 
@@ -12,14 +12,14 @@ func UpdateSchemaFromFolder(schema *SchemaInfo, excelDir string) error {
 		fullPath := filepath.Join(excelDir, filePath)
 		f, err := excelize.OpenFile(fullPath)
 		if err != nil {
-			fmt.Printf("Warning: unable to open Excel file %s: %v\n", filePath, err)
+			logger.Warn("Unable to open Excel file", "file", filePath, "error", err)
 			continue
 		}
 
 		for sheetName, sheetInfo := range fileInfo.Sheets {
 			rows, err := f.GetRows(sheetName)
 			if err != nil {
-				fmt.Printf("Warning: error reading sheet %s: %v\n", sheetName, err)
+				logger.Warn("Error reading sheet", "sheet", sheetName, "file", filePath, "error", err)
 				continue
 			}
 
@@ -47,7 +47,7 @@ func UpdateSchemaFromFolder(schema *SchemaInfo, excelDir string) error {
 
 				fileInfo.Sheets[sheetName] = sheetInfo
 			} else {
-				fmt.Printf("Warning: sheet %s has fewer rows than specified offset\n", sheetName)
+				logger.Warn("Sheet has insufficient rows", "sheet", sheetName, "file", filePath, "offset", sheetInfo.OffsetHeader, "rows", len(rows))
 			}
 		}
 
@@ -55,6 +55,6 @@ func UpdateSchemaFromFolder(schema *SchemaInfo, excelDir string) error {
 		f.Close()
 	}
 
-	fmt.Println("Schema has been updated. Please manually set or modify data_type in schema.yml file.")
+	logger.Info("Schema update completed", "message", "Please manually set or modify data_type in schema.yml file")
 	return nil
 }

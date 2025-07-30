@@ -7,6 +7,8 @@ import (
 	"runtime"
 	"strings"
 
+	"excel-schema-generator/excelschema"
+	"excel-schema-generator/pkg/logger"
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
@@ -14,8 +16,6 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 	"github.com/sqweek/dialog"
-
-	"excel-schema-generator/excelschema"
 )
 
 type GUI struct {
@@ -50,6 +50,9 @@ func runGUI() {
 }
 
 func (g *GUI) createUI() {
+	// Initialize logging
+	logger.SetDefault(logger.New(logger.DefaultConfig()))
+	
 	g.excelFolderEntry = widget.NewEntry()
 	g.excelFolderEntry.SetText(g.config.ExcelFolder)
 	g.schemaFolderEntry = widget.NewEntry()
@@ -113,7 +116,6 @@ func (g *GUI) createUI() {
 
 	g.window.SetContent(g.content)
 }
-
 func (g *GUI) selectFolder(title string) (string, error) {
 	dir, err := dialog.Directory().Title(title).Browse()
 	if err != nil {

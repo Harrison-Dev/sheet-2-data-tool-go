@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"excel-schema-generator/pkg/logger"
 	"github.com/xuri/excelize/v2"
 )
 
@@ -30,7 +31,7 @@ func GenerateDataFromFolder(schema *SchemaInfo, excelDir string) (*JSONOutput, e
 		fullPath := filepath.Join(excelDir, filePath)
 		f, err := excelize.OpenFile(fullPath)
 		if err != nil {
-			fmt.Printf("Warning: unable to open Excel file %s: %v\n", filePath, err)
+			logger.Warn("Unable to open Excel file", "file", filePath, "error", err)
 			continue
 		}
 
@@ -38,7 +39,7 @@ func GenerateDataFromFolder(schema *SchemaInfo, excelDir string) (*JSONOutput, e
 			className := sheetInfo.ClassName
 			rows, err := f.GetRows(sheetName)
 			if err != nil {
-				fmt.Printf("Warning: error reading sheet %s: %v\n", sheetName, err)
+				logger.Warn("Error reading sheet", "sheet", sheetName, "file", filePath, "error", err)
 				continue
 			}
 
@@ -52,6 +53,7 @@ func GenerateDataFromFolder(schema *SchemaInfo, excelDir string) (*JSONOutput, e
 					}
 				}
 				if idFieldIndex == -1 {
+					logger.Error("No ID field found", "sheet", sheetName, "file", filePath)
 					return nil, fmt.Errorf("error: no int type id field found in sheet %s", sheetName)
 				}
 
@@ -74,7 +76,7 @@ func GenerateDataFromFolder(schema *SchemaInfo, excelDir string) (*JSONOutput, e
 							fieldInfo := sheetInfo.DataClass[i]
 							convertedValue, err := convertValue(value, fieldInfo.DataType)
 							if err != nil {
-								fmt.Printf("Warning: error converting field '%s' value: %v\n", fieldInfo.Name, err)
+								logger.Warn("Error converting field value", "field", fieldInfo.Name, "value", value, "type", fieldInfo.DataType, "error", err)
 								rowData[fieldInfo.Name] = value // Use original string value
 							} else {
 								rowData[fieldInfo.Name] = convertedValue
@@ -85,7 +87,7 @@ func GenerateDataFromFolder(schema *SchemaInfo, excelDir string) (*JSONOutput, e
 				}
 				output.Data[className] = sheetData
 			} else {
-				fmt.Printf("Warning: sheet %s has fewer rows than specified offset\n", sheetName)
+				logger.Warn("Sheet has insufficient rows", "sheet", sheetName, "file", filePath, "offset", sheetInfo.OffsetHeader, "rows", len(rows))
 			}
 		}
 
@@ -98,11 +100,13 @@ func GenerateDataFromFolder(schema *SchemaInfo, excelDir string) (*JSONOutput, e
 func SaveJSONOutput(output *JSONOutput, filename string) error {
 	jsonData, err := json.MarshalIndent(output, "", "  ")
 	if err != nil {
+		logger.Error("Failed to convert data to JSON", "error", err)
 		return fmt.Errorf("error converting data to JSON: %v", err)
 	}
 
 	err = os.WriteFile(filename, jsonData, 0644)
 	if err != nil {
+		logger.Error("Failed to save data file", "file", filename, "error", err)
 		return fmt.Errorf("error saving data file: %v", err)
 	}
 
