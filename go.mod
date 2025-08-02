@@ -4,7 +4,6 @@ go 1.21
 
 require (
 	fyne.io/fyne/v2 v2.4.5
-	github.com/sqweek/dialog v0.0.0-20240226140203-065105509627
 	github.com/xuri/excelize/v2 v2.8.1
 	gopkg.in/yaml.v2 v2.4.0
 )
@@ -16,7 +15,6 @@ require (
 
 require (
 	fyne.io/systray v1.10.1-0.20231115130155-104f5ef7839e // indirect
-	github.com/TheTitanrain/w32 v0.0.0-20180517000239-4f5cfb03fabf // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fredbi/uri v1.0.0 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect

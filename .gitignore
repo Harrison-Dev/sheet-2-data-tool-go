@@ -46,3 +46,4 @@ CLAUDE.md
 # Test data
 test-data/
 *.xlsx
+.claude/*

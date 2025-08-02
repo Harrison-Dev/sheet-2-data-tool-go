@@ -1,284 +1,304 @@
-# Excel Schema Generator
+# Excel Schema Generator v2.0
 
-A tool for extracting schema definitions from Excel files and generating JSON data. Supports both Command Line Interface (CLI) and Graphical User Interface (GUI) operation modes, with structured logging capabilities.
+A modern, refactored Excel Schema Generator built with clean architecture principles. This tool processes Excel files to generate YAML schemas and JSON data outputs, specifically designed for Unity game development workflows.
 
-## ✨ Features
+## ✨ Key Features
 
-- **Automatic Schema Extraction**: Automatically analyzes Excel files and generates YAML format schema definitions
-- **Data Conversion**: Converts Excel data to JSON format based on schema definitions
-- **Dual Operation Modes**:
-  - CLI mode: Suitable for automation and scripting
-  - GUI mode: Provides a user-friendly visual interface
-- **Structured Logging**: Built-in structured logging with configurable levels and formats
-- **Schema Updates**: Supports incremental updates to existing schema definitions
-- **Cross-platform Support**: Supports Windows, macOS (Intel and Apple Silicon)
+- **Clean Architecture**: Follows hexagonal/clean architecture patterns for better maintainability
+- **Dual Interface**: Both CLI and GUI modes (GUI coming soon in v2.0)
+- **Cross-Platform**: Supports Windows, macOS, and Linux
+- **Comprehensive Logging**: Structured logging with configurable levels
+- **Error Handling**: Robust error handling with user-friendly messages
+- **Schema Management**: Generate, update, and validate Excel schemas
+- **Data Generation**: Export Excel data as structured JSON
+- **Unity Compatible**: Output format designed for Unity master memory project
+
+## 🏗️ Architecture
+
+The application follows clean architecture principles with the following layers:
+
+### Core Components
+- **Domain Layer** (`internal/core/models/`): Business entities and rules
+- **Application Layer** (`internal/core/`): Use cases and business logic
+- **Infrastructure Layer** (`internal/adapters/`): External system integrations
+- **Ports** (`internal/ports/`): Interface definitions
+
+### Key Services
+- **Schema Service**: Manages schema generation, updates, and validation
+- **Excel Service**: Handles Excel file processing and data extraction
+- **Validation Service**: Validates schemas and data integrity
+- **File Service**: Manages file system operations
 
 ## 🚀 Installation
 
-### Download Pre-compiled Binaries
-Download the version suitable for your operating system from the [Releases](https://github.com/yourusername/sheet-2-data-tool-go/releases) page.
+### Prerequisites
+- Go 1.21 or later
+- Excel files (.xlsx or .xls format)
 
 ### Build from Source
-
-Requirements:
-- Go 1.19 or higher
-- CGO support (required for GUI mode)
-
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/sheet-2-data-tool-go.git
-cd sheet-2-data-tool-go
-
-# Build
+git clone <repository-url>
+cd excel-schema-generator
 go build .
+```
 
-# Or use the build scripts
-./scripts/build_macos.sh      # For macOS (creates universal binary)
-scripts\build_windows.bat     # For Windows
+### Platform-Specific Builds
+```bash
+# macOS (universal binary)
+./scripts/build/build_macos.sh
+
+# Windows
+./scripts/build/build_windows.bat
+
+# Linux
+./scripts/build/build_linux.sh
 ```
 
 ## 📖 Usage
 
+### CLI Commands
+
+#### Generate Schema
+Create a new schema from Excel files in a folder:
+```bash
+./excel-schema-generator generate -folder ./excel-files [-output ./schemas]
+```
+
+#### Update Schema
+Update an existing schema with new Excel data:
+```bash
+./excel-schema-generator update -folder ./excel-files [-output ./schemas]
+```
+
+#### Generate Data
+Generate JSON data from Excel files using an existing schema:
+```bash
+./excel-schema-generator data -folder ./excel-files [-output ./output]
+```
+
+### Command Flags
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `-folder` | Path to Excel files folder (required) | - |
+| `-output` | Output directory path | Current directory |
+| `-verbose` | Enable verbose logging | false |
+| `-log-level` | Log level (debug, info, warn, error) | info |
+| `-log-format` | Log format (text, json) | text |
+
 ### GUI Mode
-
-Launch the graphical interface by running the program without arguments:
-
 ```bash
 ./excel-schema-generator
 ```
+*Note: GUI mode is coming soon in v2.0*
 
-In the GUI, you can:
-1. Select the folder containing Excel files
-2. Specify the location to save schema definition files
-3. Set the JSON output folder
-4. Click buttons to execute corresponding operations
+## 📁 File Formats
 
-### CLI Mode
+### Input Files
+- **Excel Files**: `.xlsx` and `.xls` formats
+- **Schema Files**: `schema.yml` (YAML format)
 
-#### 1. Generate Initial Schema
+### Output Files
+- **Schema**: `schema.yml` - Contains Excel structure definitions
+- **Data**: `output.json` - Generated JSON data for Unity
 
-Generate basic schema definition from Excel folder:
-
-```bash
-./excel-schema-generator generate -folder /path/to/excel/files [OPTIONS]
-```
-
-This will scan all Excel files in the specified folder and generate a `schema.yml` file in the current directory.
-
-#### 2. Update Schema
-
-Update existing schema when Excel files have changed:
-
-```bash
-./excel-schema-generator update -folder /path/to/excel/files [OPTIONS]
-```
-
-This will update the existing `schema.yml` file with any new columns or sheets found in the Excel files.
-
-#### 3. Generate JSON Data
-
-Extract data from Excel files based on schema:
-
-```bash
-./excel-schema-generator data -folder /path/to/excel/files [OPTIONS]
-```
-
-This will generate an `output.json` file containing all the data from the Excel files according to the schema definition.
-
-**Common Options:**
-- `-verbose`: Enable verbose logging
-- `-log-level`: Set log level (debug, info, warn, error) (default: "info")
-- `-log-format`: Set log format (text, json) (default: "text")
-
-**Examples:**
-
-```bash
-# Generate schema with debug logging
-./excel-schema-generator generate -folder ./excel_files -log-level debug -verbose
-
-# Update schema with JSON format logging
-./excel-schema-generator update -folder ./excel_files -log-format json
-
-# Generate data with error-level logging only
-./excel-schema-generator data -folder ./excel_files -log-level error
-```
-
-## 🔄 Workflow
-
-1. **Initialize**: Use the `generate` command to create initial schema from your Excel files
-2. **Customize**: Edit `schema.yml` to adjust data types and field names
-3. **Update**: Use the `update` command when Excel structure changes
-4. **Output**: Use the `data` command to generate final JSON data
-
-## 📋 Schema Format
-
-Example `schema.yml` file structure:
-
+### Schema Structure
 ```yaml
+version: "1.0"
+metadata:
+  description: "Generated Excel schema for data conversion"
+  schema_version: "1.0"
+created_at: 2024-01-01T00:00:00Z
+updated_at: 2024-01-01T00:00:00Z
 files:
-  example.xlsx:
+  "example.xlsx":
+    file_name: "example.xlsx"
+    file_path: "example.xlsx"
+    checksum: "abc123..."
+    last_updated: 2024-01-01T00:00:00Z
     sheets:
-      Sheet1:
-        offset_header: 1        # Header row position (1-based)
-        class_name: "ExampleData"
+      "Sheet1":
         sheet_name: "Sheet1"
+        class_name: "Sheet1"
+        offset_header: 1
+        row_count: 100
         data_class:
-          - name: "Id"          # Must have an "Id" field of type "int"
+          - name: "Id"
             data_type: "int"
-          - name: "name"
+            required: true
+          - name: "Name"
             data_type: "string"
-          - name: "value"
-            data_type: "float"
-          - name: "active"
-            data_type: "bool"
+            required: false
 ```
 
-### Field Descriptions
-
-- `offset_header`: Position of the header row (1-based indexing)
-- `class_name`: Data class name for the sheet
-- `sheet_name`: Excel sheet name
-- `data_class`: Field definition list
-  - `name`: Field name (case-sensitive)
-  - `data_type`: Data type (string, int, float, bool)
-
-**Important**: If a sheet doesn't have an "Id" field in the schema, the system will automatically generate one with consecutive integers starting from 0.
-
-## 🔧 Advanced Features
-
-### Structured Logging
-
-The application features comprehensive structured logging:
-
-- **Log Levels**: Debug, Info, Warn, Error
-- **Log Formats**: Text (human-readable) or JSON (machine-parseable)
-- **Contextual Information**: All log entries include relevant context like file names, sheet names, etc.
-
-Example log output (text format):
-```
-time=2025-07-30T10:15:30.123+08:00 level=INFO msg="Schema generation completed" file=schema.yml
-```
-
-Example log output (JSON format):
+### Output Data Structure
 ```json
-{"time":"2025-07-30T10:15:30.123+08:00","level":"INFO","msg":"Schema generation completed","file":"schema.yml"}
+{
+  "metadata": {
+    "generated_at": "2024-01-01T00:00:00Z",
+    "schema_version": "1.0",
+    "generator": "Excel Schema Generator v2.0",
+    "file_count": 1,
+    "record_count": 100
+  },
+  "schema": {
+    "Sheet1": [
+      {
+        "name": "Id",
+        "dataType": "int"
+      },
+      {
+        "name": "Name",
+        "dataType": "string"
+      }
+    ]
+  },
+  "data": {
+    "Sheet1": [
+      {
+        "Id": 1,
+        "Name": "Example Item"
+      }
+    ]
+  }
+}
 ```
 
-## 🏗️ Building the Project
+## 🔧 Configuration
 
-### macOS
+### Logging Configuration
+Control logging behavior through command-line flags:
 
 ```bash
-# Build universal binary (supports Intel and Apple Silicon)
-./scripts/build_macos.sh
+# Debug level with JSON format
+./excel-schema-generator generate -folder ./data -log-level debug -log-format json
+
+# Verbose mode
+./excel-schema-generator generate -folder ./data -verbose
 ```
 
-### Windows
+### Excel Processing Options
+The application automatically handles:
+- Multiple sheets per Excel file
+- Header row detection (configurable offset)
+- Data type inference
+- Empty row/column handling
+- Temporary file exclusion (`~$` prefix files)
 
+## 🧪 Development
+
+### Running Tests
 ```bash
-# Build Windows executable
-scripts\build_windows.bat
-```
-
-### Development Build
-
-```bash
-go build .
-```
-
-## 🧪 Testing
-
-Run all tests:
-
-```bash
+# Run all tests
 go test ./...
+
+# Run tests with coverage
+go test -cover ./...
+
+# Run specific test packages
+go test ./internal/core/schema/...
 ```
 
-Run tests with verbose output:
-
+### Code Quality
 ```bash
-go test ./... -v
+# Format code
+go fmt ./...
+
+# Lint code
+golangci-lint run
+
+# Vet code
+go vet ./...
 ```
 
-Run specific package tests:
-
-```bash
-go test ./excelschema -v
-go test ./pkg/logger -v
+### Project Structure
+```
+excel-schema-generator/
+├── cmd/                    # Application entry points
+│   ├── cli/               # CLI application
+│   └── gui/               # GUI application (coming soon)
+├── internal/              # Private application packages
+│   ├── core/              # Business logic
+│   │   ├── models/        # Domain models
+│   │   └── schema/        # Schema services
+│   ├── adapters/          # Infrastructure adapters
+│   │   ├── excel/         # Excel processing
+│   │   └── filesystem/    # File system operations
+│   ├── ports/             # Interface definitions
+│   └── utils/             # Shared utilities
+│       ├── errors/        # Error handling
+│       ├── logger/        # Logging utilities
+│       └── validation/    # Validation services
+├── pkg/                   # Public packages
+│   └── logger/            # Logger implementation
+├── test/                  # Test files and fixtures
+└── scripts/               # Build and utility scripts
 ```
 
-## 📁 Project Structure
+## 🚨 Error Handling
 
-```
-sheet-2-data-tool-go/
-├── main.go                    # Main entry point with CLI support
-├── gui.go                     # GUI implementation
-├── config.go                  # Configuration management
-├── excelschema/               # Core functionality package
-│   ├── models.go              # Data structure definitions
-│   ├── generate-schema.go     # Schema generation logic
-│   ├── update-schema.go       # Schema update logic
-│   ├── generate-data.go       # Data generation logic
-│   └── *_test.go              # Comprehensive test suite
-├── pkg/                       # Additional packages
-│   └── logger/                # Structured logging system
-│       ├── logger.go
-│       └── logger_test.go
-└── scripts/                   # Build scripts
-    ├── build_macos.sh
-    └── build_windows.bat
-```
+The application provides comprehensive error handling with user-friendly messages:
 
-## 📦 Dependencies
+### Common Errors
+- **File Not Found**: Occurs when Excel files or schema files don't exist
+- **Invalid Format**: Occurs when Excel files are corrupted or unsupported
+- **Validation Errors**: Occurs when schema or data validation fails
+- **Permission Errors**: Occurs when file access is denied
 
-- [fyne.io/fyne/v2](https://fyne.io/) - GUI framework
-- [github.com/xuri/excelize/v2](https://github.com/qax-os/excelize) - Excel file processing
-- [gopkg.in/yaml.v2](https://gopkg.in/yaml.v2) - YAML parsing
-- Built-in `log/slog` - Structured logging (Go 1.19+)
+### Error Categories
+- `VALIDATION_ERROR`: Input validation failures
+- `FILE_ERROR`: File system operation failures
+- `EXCEL_ERROR`: Excel processing failures
+- `SCHEMA_ERROR`: Schema-related failures
+- `CONFIG_ERROR`: Configuration issues
 
-## 🔍 Troubleshooting
+## 🔄 Migration from v1.x
 
-### Common Issues
+The v2.0 refactoring maintains backward compatibility for:
+- CLI command interface (`generate`, `update`, `data`)
+- Output file formats (`schema.yml`, `output.json`)
+- Unity integration patterns
 
-1. **Auto-generated ID**: When no "Id" field is defined in the schema, the system automatically generates one starting from 0
-2. **Permission Errors**: Ensure the application has read/write permissions for the specified directories
-3. **Empty Output**: Check that the offset_header value correctly points to your header row
-
-### Tips
-
-1. **Large Files**: For better performance with large Excel files, use appropriate log levels (avoid debug in production)
-2. **Schema Validation**: Always review the generated schema.yml before generating data
-3. **Data Types**: Ensure data types in schema match the actual data in Excel files
-
-## 📄 License
-
-[Please add your license information]
+### Breaking Changes
+- GUI mode is temporarily unavailable (coming soon)
+- Some internal APIs have changed (not affecting CLI usage)
+- Log format has been standardized
 
 ## 🤝 Contributing
 
-Issues and Pull Requests are welcome!
-
 1. Fork the repository
-2. Create a feature branch
-3. Add tests for new functionality
-4. Ensure all tests pass
-5. Submit a pull request
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes following the architecture patterns
+4. Add tests for new functionality
+5. Ensure all tests pass (`go test ./...`)
+6. Commit changes (`git commit -m 'Add amazing feature'`)
+7. Push to branch (`git push origin feature/amazing-feature`)
+8. Open a Pull Request
 
-## 👨‍💻 Author
+### Development Guidelines
+- Follow clean architecture principles
+- Add comprehensive tests for new features
+- Use structured logging throughout
+- Document public APIs
+- Handle errors gracefully
 
-[Please add author information]
+## 📝 License
 
-## 📝 Changelog
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-### v1.1.0 (Latest)
-- ✨ Added structured logging with configurable levels and formats
-- 🧪 Comprehensive test coverage for all features
-- 📚 Improved documentation
-- 🔧 Better error handling and logging
+## 🙏 Acknowledgments
 
-### v1.0.0
-- 🎉 Initial release
-- ✨ Excel to YAML schema generation
-- ✨ Schema update functionality
-- ✨ JSON data generation from Excel
-- ✨ GUI and CLI interfaces
+- Built with [Excelize](https://github.com/xuri/excelize) for Excel processing
+- Uses [Fyne](https://fyne.io/) for GUI framework (coming soon)
+- Structured logging with Go's `slog` package
+- Clean architecture principles inspired by Robert C. Martin
+
+## 📞 Support
+
+- Create an issue for bug reports or feature requests
+- Check existing issues before creating new ones
+- Provide detailed information including OS, Go version, and error messages
+
+---
+
+**Excel Schema Generator v2.0** - Transforming Excel data for modern applications with clean, maintainable code.
