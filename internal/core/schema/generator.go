@@ -143,7 +143,11 @@ func (g *SchemaGenerator) UpdateFromFolder(ctx context.Context, schema *models.S
 		}
 
 		if needsUpdate {
-			fileInfo, err := g.processExcelFile(ctx, fullPath, relativePath)
+			// Get existing file info for merging
+			existingFileInfo, _ := schema.GetFile(relativePath)
+			
+			// Process file with existing info for smart merge
+			fileInfo, err := g.processExcelFileWithExisting(ctx, fullPath, relativePath, &existingFileInfo)
 			if err != nil {
 				g.logger.Warn("Failed to process Excel file during update", "file", relativePath, "error", err)
 				continue
@@ -284,6 +288,11 @@ func (g *SchemaGenerator) GetSchemaStatistics(ctx context.Context, schema *model
 
 // processExcelFile processes a single Excel file and generates file info
 func (g *SchemaGenerator) processExcelFile(ctx context.Context, fullPath, relativePath string) (models.ExcelFileInfo, error) {
+	return g.processExcelFileWithExisting(ctx, fullPath, relativePath, nil)
+}
+
+// processExcelFileWithExisting processes a single Excel file with optional existing file info for merging
+func (g *SchemaGenerator) processExcelFileWithExisting(ctx context.Context, fullPath, relativePath string, existingFileInfo *models.ExcelFileInfo) (models.ExcelFileInfo, error) {
 	// Get Excel file metadata
 	excelFile, err := g.excelRepo.GetFileInfo(ctx, fullPath)
 	if err != nil {
@@ -307,7 +316,14 @@ func (g *SchemaGenerator) processExcelFile(ctx context.Context, fullPath, relati
 
 	// Process each sheet
 	for sheetName, sheet := range excelData.Sheets {
-		sheetInfo := g.processSheetInfo(sheetName, sheet)
+		var existingSheetInfo *models.SheetInfo
+		if existingFileInfo != nil {
+			if existingSheet, exists := existingFileInfo.Sheets[sheetName]; exists {
+				existingSheetInfo = &existingSheet
+			}
+		}
+		
+		sheetInfo := g.processSheetInfoWithExisting(sheetName, sheet, existingSheetInfo)
 		fileInfo.Sheets[sheetName] = sheetInfo
 	}
 
@@ -316,12 +332,33 @@ func (g *SchemaGenerator) processExcelFile(ctx context.Context, fullPath, relati
 
 // processSheetInfo processes sheet data and generates sheet info
 func (g *SchemaGenerator) processSheetInfo(sheetName string, sheet models.ExcelSheet) models.SheetInfo {
+	return g.processSheetInfoWithExisting(sheetName, sheet, nil)
+}
+
+// processSheetInfoWithExisting processes sheet data with optional existing sheet info for merging
+func (g *SchemaGenerator) processSheetInfoWithExisting(sheetName string, sheet models.ExcelSheet, existingSheetInfo *models.SheetInfo) models.SheetInfo {
 	sheetInfo := models.SheetInfo{
 		SheetName:    sheetName,
 		ClassName:    sheetName,
 		OffsetHeader: 1, // Default header offset
 		DataClass:    make([]models.DataClassInfo, 0),
 		RowCount:     sheet.GetRowCount(),
+	}
+
+	// If we have existing sheet info, preserve manual settings
+	if existingSheetInfo != nil {
+		// Preserve manually configured values
+		sheetInfo.ClassName = existingSheetInfo.ClassName
+		sheetInfo.OffsetHeader = existingSheetInfo.OffsetHeader
+		sheetInfo.ValidationRules = existingSheetInfo.ValidationRules
+	}
+
+	// Create map of existing fields for quick lookup
+	existingFields := make(map[string]models.DataClassInfo)
+	if existingSheetInfo != nil {
+		for _, field := range existingSheetInfo.DataClass {
+			existingFields[field.Name] = field
+		}
 	}
 
 	// Generate data class info from headers
@@ -332,6 +369,21 @@ func (g *SchemaGenerator) processSheetInfo(sheetName string, sheet models.ExcelS
 				DataType: g.detectDataType(sheet, header),
 				Required: false, // Default to not required
 			}
+
+			// If this field exists in the existing schema, preserve manual settings
+			if existingField, exists := existingFields[header]; exists {
+				// Preserve all manually configured values
+				dataClass.Required = existingField.Required
+				dataClass.Default = existingField.Default
+				dataClass.Description = existingField.Description
+				
+				// Only preserve DataType if it's not the default "string"
+				// This allows for manual type overrides
+				if existingField.DataType != "string" || g.detectDataType(sheet, header) == "string" {
+					dataClass.DataType = existingField.DataType
+				}
+			}
+
 			sheetInfo.DataClass = append(sheetInfo.DataClass, dataClass)
 		}
 	}
