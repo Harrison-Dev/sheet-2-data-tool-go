@@ -377,11 +377,9 @@ func (g *SchemaGenerator) processSheetInfoWithExisting(sheetName string, sheet m
 				dataClass.Default = existingField.Default
 				dataClass.Description = existingField.Description
 				
-				// Only preserve DataType if it's not the default "string"
-				// This allows for manual type overrides
-				if existingField.DataType != "string" || g.detectDataType(sheet, header) == "string" {
-					dataClass.DataType = existingField.DataType
-				}
+				// Always preserve existing DataType
+				// This ensures manually configured types are never overwritten
+				dataClass.DataType = existingField.DataType
 			}
 
 			sheetInfo.DataClass = append(sheetInfo.DataClass, dataClass)
