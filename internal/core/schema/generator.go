@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"time"
 
 	"excel-schema-generator/internal/core/models"
@@ -377,9 +379,14 @@ func (g *SchemaGenerator) processSheetInfoWithExisting(sheetName string, sheet m
 				dataClass.Default = existingField.Default
 				dataClass.Description = existingField.Description
 				
-				// Always preserve existing DataType
-				// This ensures manually configured types are never overwritten
-				dataClass.DataType = existingField.DataType
+				// Preserve existing DataType if it has been manually modified
+				// We consider it manually modified if:
+				// 1. The existing type is different from what auto-detection would give
+				// 2. OR the existing type is not "string" (indicating manual configuration)
+				autoDetectedType := g.detectDataType(sheet, header)
+				if existingField.DataType != autoDetectedType || existingField.DataType != "string" {
+					dataClass.DataType = existingField.DataType
+				}
 			}
 
 			sheetInfo.DataClass = append(sheetInfo.DataClass, dataClass)
@@ -410,19 +417,61 @@ func (g *SchemaGenerator) detectDataType(sheet models.ExcelSheet, columnName str
 		sampleSize = len(sheet.Rows)
 	}
 
-	// Simple type detection logic
-	// TODO: Implement more sophisticated type detection
+	// Track type candidates
+	hasInt := true
+	hasFloat := true
+	hasBool := true
+	nonEmptyCount := 0
+
+	// Check all sample values
 	for i := 0; i < sampleSize; i++ {
 		if i < len(sheet.Rows) && columnIndex < len(sheet.Rows[i]) {
-			value := sheet.Rows[i][columnIndex]
-			if value != "" {
-				// For now, just return string type
-				// In the future, implement number/bool detection
-				return "string"
+			value := strings.TrimSpace(sheet.Rows[i][columnIndex])
+			if value == "" {
+				continue // Skip empty values
+			}
+			
+			nonEmptyCount++
+			
+			// Check for boolean
+			lowerValue := strings.ToLower(value)
+			if hasBool && lowerValue != "true" && lowerValue != "false" && lowerValue != "yes" && lowerValue != "no" && lowerValue != "0" && lowerValue != "1" {
+				hasBool = false
+			}
+			
+			// Check for integer
+			if hasInt {
+				if _, err := strconv.ParseInt(value, 10, 64); err != nil {
+					hasInt = false
+				}
+			}
+			
+			// Check for float
+			if hasFloat {
+				if _, err := strconv.ParseFloat(value, 64); err != nil {
+					hasFloat = false
+				}
 			}
 		}
 	}
 
+	// If no non-empty values found, default to string
+	if nonEmptyCount == 0 {
+		return "string"
+	}
+
+	// Determine type based on what's still valid
+	// Priority: bool > int > float > string
+	if hasBool {
+		return "bool"
+	}
+	if hasInt {
+		return "int"
+	}
+	if hasFloat {
+		return "float"
+	}
+	
 	return "string"
 }
 
