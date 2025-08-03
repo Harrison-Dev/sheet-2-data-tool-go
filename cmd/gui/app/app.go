@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"excel-schema-generator/gdrive"
 	"excel-schema-generator/internal/adapters/filesystem"
 	"excel-schema-generator/internal/core/models"
 	"excel-schema-generator/internal/core/schema"
@@ -37,6 +38,11 @@ type GUIApp struct {
 	outputFolderEntry *widget.Entry
 	statusLabel       *widget.Label
 	progressBar       *widget.ProgressBar
+	
+	// Google Drive download components
+	credentialsEntry *widget.Entry
+	driveLinkEntry   *widget.Entry
+	downloadOutputEntry *widget.Entry
 }
 
 // NewGUIApp creates a new GUI application
@@ -112,6 +118,18 @@ func (a *GUIApp) initializeComponents() {
 	a.outputFolderEntry.SetPlaceHolder("Select output folder...")
 	a.outputFolderEntry.Disable() // Read-only, use browse button
 	
+	// Google Drive download components
+	a.credentialsEntry = widget.NewEntry()
+	a.credentialsEntry.SetPlaceHolder("Select Google credentials JSON file...")
+	a.credentialsEntry.Disable() // Read-only, use browse button
+	
+	a.driveLinkEntry = widget.NewEntry()
+	a.driveLinkEntry.SetPlaceHolder("Enter Google Drive folder link...")
+	
+	a.downloadOutputEntry = widget.NewEntry()
+	a.downloadOutputEntry.SetPlaceHolder("Select download output folder...")
+	a.downloadOutputEntry.Disable() // Read-only, use browse button
+	
 	// Status components with better styling
 	a.statusLabel = widget.NewLabel("Ready")
 	a.statusLabel.Alignment = fyne.TextAlignCenter
@@ -125,26 +143,20 @@ func (a *GUIApp) createLayout() *fyne.Container {
 	// Create header with title and logo
 	header := a.createHeader()
 	
-	// Folder selection section with improved design
-	folderSection := a.createFolderSection()
-	
-	// Actions section with better button layout
-	actionsSection := a.createActionsSection()
+	// Create tabs for different features
+	tabs := container.NewAppTabs(
+		container.NewTabItem("Schema Generation", a.createSchemaTab()),
+		container.NewTabItem("Google Drive Download", a.createDriveDownloadTab()),
+	)
 	
 	// Status section with enhanced feedback
 	statusSection := a.createStatusSection()
-	
-	// Add some padding and spacing
-	spacer := canvas.NewRectangle(color.Transparent)
-	spacer.SetMinSize(fyne.NewSize(0, 20))
 	
 	// Main layout with border container for better structure
 	content := container.NewVBox(
 		header,
 		widget.NewSeparator(),
-		folderSection,
-		spacer,
-		actionsSection,
+		tabs,
 		widget.NewSeparator(),
 		statusSection,
 	)
@@ -432,4 +444,150 @@ func (a *GUIApp) countSheets(schemaInfo *models.SchemaInfo) int {
 		}
 	}
 	return count
+}
+
+// createSchemaTab creates the schema generation tab content
+func (a *GUIApp) createSchemaTab() fyne.CanvasObject {
+	// Folder selection section
+	folderSection := a.createFolderSection()
+	
+	// Actions section
+	actionsSection := a.createActionsSection()
+	
+	// Add some padding and spacing
+	spacer := canvas.NewRectangle(color.Transparent)
+	spacer.SetMinSize(fyne.NewSize(0, 20))
+	
+	return container.NewVBox(
+		folderSection,
+		spacer,
+		actionsSection,
+	)
+}
+
+// createDriveDownloadTab creates the Google Drive download tab content
+func (a *GUIApp) createDriveDownloadTab() fyne.CanvasObject {
+	// Credentials file selection
+	credentialsBtn := widget.NewButtonWithIcon("Browse", theme.FileIcon(), func() {
+		a.selectFile("Select Credentials File", a.credentialsEntry, []string{".json"})
+	})
+	credentialsRow := container.NewBorder(nil, nil, nil, credentialsBtn, a.credentialsEntry)
+	
+	// Output folder selection
+	outputBtn := widget.NewButtonWithIcon("Browse", theme.FolderOpenIcon(), func() {
+		a.selectFolder("Select Download Output Folder", a.downloadOutputEntry)
+	})
+	outputRow := container.NewBorder(nil, nil, nil, outputBtn, a.downloadOutputEntry)
+	
+	// Form
+	form := &widget.Form{
+		Items: []*widget.FormItem{
+			{Text: "Credentials File", Widget: credentialsRow, HintText: "Google Cloud credentials JSON file"},
+			{Text: "Drive Folder Link", Widget: a.driveLinkEntry, HintText: "https://drive.google.com/drive/folders/..."},
+			{Text: "Output Folder", Widget: outputRow, HintText: "Where to save downloaded files"},
+		},
+	}
+	
+	// Download button
+	downloadBtn := widget.NewButtonWithIcon("Download from Drive", theme.DownloadIcon(), a.downloadFromDrive)
+	downloadBtn.Importance = widget.HighImportance
+	
+	// Card
+	card := widget.NewCard(
+		"Google Drive Download",
+		"Download Excel and Google Sheets files from a Google Drive folder",
+		container.NewVBox(
+			form,
+			container.NewPadded(downloadBtn),
+		),
+	)
+	
+	return card
+}
+
+// selectFile opens a file selection dialog
+func (a *GUIApp) selectFile(title string, entry *widget.Entry, filters []string) {
+	dialog.ShowFileOpen(func(reader fyne.URIReadCloser, err error) {
+		if err != nil {
+			a.showError(fmt.Sprintf("Error selecting file: %v", err))
+			return
+		}
+		if reader == nil {
+			return // User cancelled
+		}
+		defer reader.Close()
+		
+		// Get the path from the URI
+		path := reader.URI().Path()
+		
+		// Enable entry temporarily to set text
+		entry.Enable()
+		entry.SetText(path)
+		entry.Disable()
+		
+		a.logger.Debug("File selected", "title", title, "path", path)
+		a.setStatus(fmt.Sprintf("Selected: %s", path))
+	}, a.window)
+}
+
+// downloadFromDrive handles downloading files from Google Drive
+func (a *GUIApp) downloadFromDrive() {
+	a.logger.Info("Download from Drive requested")
+	
+	credentialsPath := a.credentialsEntry.Text
+	if credentialsPath == "" {
+		a.showError("Please select a credentials file first")
+		return
+	}
+	
+	driveLink := a.driveLinkEntry.Text
+	if driveLink == "" {
+		a.showError("Please enter a Google Drive folder link")
+		return
+	}
+	
+	outputPath := a.downloadOutputEntry.Text
+	if outputPath == "" {
+		a.showError("Please select an output folder")
+		return
+	}
+	
+	a.setStatus("Downloading from Google Drive...")
+	a.showProgress()
+	
+	// Disable UI during operation
+	a.disableActions()
+	
+	// Run in goroutine to avoid blocking UI
+	go func() {
+		defer func() {
+			a.hideProgress()
+			a.enableActions()
+		}()
+		
+		ctx := context.Background()
+		
+		a.progressBar.SetValue(0.1)
+		a.setStatus("Creating Google Drive client...")
+		
+		// Create downloader
+		downloader, err := gdrive.NewDownloader(ctx, credentialsPath)
+		if err != nil {
+			a.showError(fmt.Sprintf("Failed to create downloader: %v", err))
+			return
+		}
+		
+		a.progressBar.SetValue(0.3)
+		a.setStatus("Downloading files from Google Drive...")
+		
+		// Download files
+		if err := downloader.DownloadFromDriveLink(driveLink, outputPath); err != nil {
+			a.showError(fmt.Sprintf("Failed to download from Drive: %v", err))
+			return
+		}
+		
+		a.progressBar.SetValue(1.0)
+		a.setStatus("✓ Download completed successfully")
+		a.showSuccess(fmt.Sprintf("Successfully downloaded files to:\n%s", outputPath))
+	}()
 }

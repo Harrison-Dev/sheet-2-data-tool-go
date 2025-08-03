@@ -5,8 +5,9 @@ A modern, refactored Excel Schema Generator built with clean architecture princi
 ## ✨ Key Features
 
 - **Clean Architecture**: Follows hexagonal/clean architecture patterns for better maintainability
-- **Dual Interface**: Both CLI and GUI modes (GUI coming soon in v2.0)
+- **Dual Interface**: Both CLI and GUI modes with intuitive interfaces
 - **Cross-Platform**: Supports Windows, macOS, and Linux
+- **Google Drive Integration**: Download Excel files and Google Sheets directly from Drive folders
 - **Comprehensive Logging**: Structured logging with configurable levels
 - **Error Handling**: Robust error handling with user-friendly messages
 - **Schema Management**: Generate, update, and validate Excel schemas
@@ -71,12 +72,23 @@ Generate JSON data from Excel files using an existing schema:
 ./excel-schema-generator data -folder ./excel-files [-output ./output]
 ```
 
+#### Download from Google Drive
+Download Excel files and Google Sheets from a Google Drive folder:
+```bash
+./excel-schema-generator download \
+  -credentials ./service-account.json \
+  -drive-link 'https://drive.google.com/drive/folders/...' \
+  -output ./downloads
+```
+
 ### Command Flags
 
 | Flag | Description | Default |
 |------|-------------|---------|
-| `-folder` | Path to Excel files folder (required) | - |
+| `-folder` | Path to Excel files folder (required for generate/data) | - |
 | `-output` | Output directory path | Current directory |
+| `-credentials` | Path to Google Service Account JSON file (for download) | - |
+| `-drive-link` | Google Drive folder link (for download) | - |
 | `-verbose` | Enable verbose logging | false |
 | `-log-level` | Log level (debug, info, warn, error) | info |
 | `-log-format` | Log format (text, json) | text |
@@ -85,7 +97,10 @@ Generate JSON data from Excel files using an existing schema:
 ```bash
 ./excel-schema-generator
 ```
-*Note: GUI mode is coming soon in v2.0*
+
+The GUI provides:
+- **Schema Generation Tab**: Visual interface for schema generation and data export
+- **Google Drive Download Tab**: Easy download of files from Google Drive with Service Account authentication
 
 ## 📁 File Formats
 

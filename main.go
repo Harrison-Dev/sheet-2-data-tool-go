@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"excel-schema-generator/cmd/gui/app"
+	"excel-schema-generator/gdrive"
 	"excel-schema-generator/internal/adapters/excel"
 	"excel-schema-generator/internal/adapters/filesystem"
 	"excel-schema-generator/internal/core/data"
@@ -20,7 +21,7 @@ import (
 
 const (
 	AppName        = "Excel Schema Generator"
-	AppVersion     = "0.1.0"
+	AppVersion     = "0.2.0"
 	schemaFileName = "schema.yml"
 	dataFileName   = "output.json"
 )
@@ -147,7 +148,7 @@ func (app *CLIApp) Run(ctx context.Context, args []string) error {
 	}
 
 	// Parse common flags
-	var folderPath, outputPath string
+	var folderPath, outputPath, credentialsPath, driveLink string
 	var verbose bool
 
 	// Simple flag parsing - in a real implementation, use flag package properly
@@ -157,6 +158,10 @@ func (app *CLIApp) Run(ctx context.Context, args []string) error {
 			folderPath = args[2:][i+1]
 		case arg == "-output" && i+1 < len(args[2:]):
 			outputPath = args[2:][i+1]
+		case arg == "-credentials" && i+1 < len(args[2:]):
+			credentialsPath = args[2:][i+1]
+		case arg == "-drive-link" && i+1 < len(args[2:]):
+			driveLink = args[2:][i+1]
 		case arg == "-verbose":
 			verbose = true
 		}
@@ -167,17 +172,20 @@ func (app *CLIApp) Run(ctx context.Context, args []string) error {
 		app.logger.Debug("Verbose logging enabled")
 	}
 
-	// Validate required folder path
-	if folderPath == "" {
-		return errors.NewValidationError(errors.ValidationRequiredFieldCode, "Folder path is required. Use -folder flag.")
-	}
-
 	commandName := args[1]
 	switch commandName {
 	case "generate":
+		if folderPath == "" {
+			return errors.NewValidationError(errors.ValidationRequiredFieldCode, "Folder path is required. Use -folder flag.")
+		}
 		return app.generateSchema(ctx, folderPath, outputPath)
 	case "data":
+		if folderPath == "" {
+			return errors.NewValidationError(errors.ValidationRequiredFieldCode, "Folder path is required. Use -folder flag.")
+		}
 		return app.generateData(ctx, folderPath, outputPath)
+	case "download":
+		return app.downloadFromDrive(ctx, credentialsPath, driveLink, outputPath)
 	default:
 		app.printUsage()
 		return errors.NewValidationError(errors.ValidationInvalidValueCode, fmt.Sprintf("Unknown command: %s", commandName))
@@ -294,6 +302,40 @@ func (app *CLIApp) updateSchema(ctx context.Context, folderPath, outputPath stri
 	return nil
 }
 
+// downloadFromDrive handles downloading files from Google Drive
+func (app *CLIApp) downloadFromDrive(ctx context.Context, credentialsPath, driveLink, outputPath string) error {
+	// Validate required parameters
+	if credentialsPath == "" {
+		return errors.NewValidationError(errors.ValidationRequiredFieldCode, "Credentials path is required. Use -credentials flag.")
+	}
+	if driveLink == "" {
+		return errors.NewValidationError(errors.ValidationRequiredFieldCode, "Drive link is required. Use -drive-link flag.")
+	}
+	if outputPath == "" {
+		return errors.NewValidationError(errors.ValidationRequiredFieldCode, "Output path is required. Use -output flag.")
+	}
+
+	app.logger.Info("Starting Google Drive download", "credentials", credentialsPath, "driveLink", driveLink, "output", outputPath)
+
+	// Create downloader
+	downloader, err := gdrive.NewDownloader(ctx, credentialsPath)
+	if err != nil {
+		app.logger.Error("Failed to create downloader", "error", err)
+		return err
+	}
+
+	// Download files
+	if err := downloader.DownloadFromDriveLink(driveLink, outputPath); err != nil {
+		app.logger.Error("Failed to download from Drive", "error", err)
+		return err
+	}
+
+	fmt.Printf("Successfully downloaded files to: %s\n", outputPath)
+	app.logger.Info("Google Drive download completed", "output", outputPath)
+
+	return nil
+}
+
 // generateData handles data generation (placeholder for now)
 func (app *CLIApp) generateData(ctx context.Context, folderPath, outputPath string) error {
 	app.logger.Info("Starting data generation", "folder", folderPath, "output", outputPath)
@@ -384,18 +426,22 @@ func (app *CLIApp) printUsage() {
 	fmt.Println("Available commands:")
 	fmt.Println("  generate   Generate or update schema from Excel files (auto-detects existing schema)")
 	fmt.Println("  data       Generate JSON data from Excel files using an existing schema")
+	fmt.Println("  download   Download Excel and Google Sheets files from Google Drive")
 	fmt.Println()
 	fmt.Println("Flags:")
-	fmt.Println("  -folder string      Path to the Excel files folder (required)")
-	fmt.Println("  -output string      Path to the output directory (optional)")
-	fmt.Println("  -verbose            Enable verbose logging")
-	fmt.Println("  -log-level string   Log level (debug, info, warn, error)")
-	fmt.Println("  -log-format string  Log format (text, json)")
+	fmt.Println("  -folder string        Path to the Excel files folder (required for generate/data)")
+	fmt.Println("  -output string        Path to the output directory")
+	fmt.Println("  -credentials string   Path to Google credentials JSON file (required for download)")
+	fmt.Println("  -drive-link string    Google Drive folder link (required for download)")
+	fmt.Println("  -verbose              Enable verbose logging")
+	fmt.Println("  -log-level string     Log level (debug, info, warn, error)")
+	fmt.Println("  -log-format string    Log format (text, json)")
 	fmt.Println()
 	fmt.Println("Examples:")
 	fmt.Println("  excel-schema-generator generate -folder ./excel-files")
 	fmt.Println("  excel-schema-generator generate -folder ./excel-files -output ./schemas")
 	fmt.Println("  excel-schema-generator data -folder ./excel-files")
+	fmt.Println("  excel-schema-generator download -credentials ./creds.json -drive-link 'https://drive.google.com/drive/folders/...' -output ./downloads")
 	fmt.Println()
-	fmt.Println("Run without arguments to start the GUI (coming soon).")
+	fmt.Println("Run without arguments to start the GUI.")
 }
