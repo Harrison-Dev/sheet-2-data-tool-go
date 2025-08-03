@@ -80,13 +80,23 @@ func (c *DataCommand) Execute(ctx context.Context, args []string) error {
 		c.logger.Error("Failed to load schema", "path", schemaPath, "error", err)
 		return errors.WrapError(err, errors.SchemaErrorType, errors.SchemaInvalidCode, "Failed to load schema")
 	}
+	fmt.Printf("DEBUG: Loaded schema with %d files\n", len(schema.Files))
+	for path := range schema.Files {
+		fmt.Printf("  - %s\n", path)
+	}
 
 	// Generate data from schema
+	c.logger.Info("Calling GenerateFromSchema", "folder", c.flags.FolderPath, "files", len(schema.Files))
+	fmt.Printf("DEBUG: About to call GenerateFromSchema with folder=%s, schema files=%d\n", c.flags.FolderPath, len(schema.Files))
+	
 	outputData, err := c.dataService.GenerateFromSchema(ctx, schema, c.flags.FolderPath)
 	if err != nil {
 		c.logger.Error("Failed to generate data", "error", err)
 		return err
 	}
+	
+	fmt.Printf("DEBUG: GenerateFromSchema returned %d classes, %d records\n", outputData.GetClassCount(), outputData.GetTotalRecordCount())
+	c.logger.Info("GenerateFromSchema completed", "classes", outputData.GetClassCount())
 
 	// Determine output path
 	outputPath := c.getDataOutputPath()
@@ -97,6 +107,12 @@ func (c *DataCommand) Execute(ctx context.Context, args []string) error {
 	}
 
 	// Save output data
+	fmt.Printf("DEBUG: Before SaveJSON - Classes: %d, Records: %d\n", outputData.GetClassCount(), outputData.GetTotalRecordCount())
+	fmt.Printf("DEBUG: Data map has %d entries\n", len(outputData.Data))
+	for className, records := range outputData.Data {
+		fmt.Printf("  - %s: %d records\n", className, len(records))
+	}
+	
 	if err := c.outputRepo.SaveJSON(ctx, outputData, outputPath); err != nil {
 		c.logger.Error("Failed to save output data", "path", outputPath, "error", err)
 		return errors.WrapError(err, errors.FileErrorType, errors.FilePermissionCode, "Failed to save output data file")
@@ -104,6 +120,8 @@ func (c *DataCommand) Execute(ctx context.Context, args []string) error {
 
 	// Success message
 	fmt.Printf("Data generated successfully: %s\n", outputPath)
+	fmt.Printf("Classes: %d\n", outputData.GetClassCount())
+	fmt.Printf("Records: %d\n", outputData.GetTotalRecordCount())
 	c.logger.Info("Data generation completed", 
 		"path", outputPath, 
 		"classes", outputData.GetClassCount(),

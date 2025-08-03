@@ -59,16 +59,11 @@ go build .
 ### CLI Commands
 
 #### Generate Schema
-Create a new schema from Excel files in a folder:
+Create a new schema or update existing schema from Excel files:
 ```bash
 ./excel-schema-generator generate -folder ./excel-files [-output ./schemas]
 ```
-
-#### Update Schema
-Update an existing schema with new Excel data:
-```bash
-./excel-schema-generator update -folder ./excel-files [-output ./schemas]
-```
+*Note: Automatically detects if schema.yml exists and will create new or update accordingly while preserving manual field settings.*
 
 #### Generate Data
 Generate JSON data from Excel files using an existing schema:
@@ -261,6 +256,7 @@ The v2.0 refactoring maintains backward compatibility for:
 
 ### Breaking Changes
 - GUI mode is temporarily unavailable (coming soon)
+- The `update` command has been integrated into `generate` command (v0.1.0+)
 - Some internal APIs have changed (not affecting CLI usage)
 - Log format has been standardized
 

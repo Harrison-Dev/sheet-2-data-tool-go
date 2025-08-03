@@ -11,6 +11,7 @@ import (
 	"excel-schema-generator/cmd/cli/commands"
 	"excel-schema-generator/internal/adapters/excel"
 	"excel-schema-generator/internal/adapters/filesystem"
+	"excel-schema-generator/internal/core/data"
 	"excel-schema-generator/internal/core/schema"
 	"excel-schema-generator/internal/utils/errors"
 	loggerAdapter "excel-schema-generator/internal/utils/logger"
@@ -88,6 +89,8 @@ func (c *CLI) printUsage() {
 }
 
 func main() {
+	fmt.Println("=== Excel Schema Generator v0.0.9-debug ===")
+	
 	// Setup logging
 	logConfig := logger.Config{
 		Level:  slog.LevelInfo,
@@ -127,6 +130,8 @@ func main() {
 	// Create dependencies
 	fileRepo := filesystem.NewFileRepository(loggerSvc)
 	excelRepo := excel.NewExcelRepository(loggerSvc)
+	schemaRepo := filesystem.NewSchemaRepository(fileRepo, loggerSvc)
+	outputRepo := filesystem.NewOutputRepository(fileRepo, loggerSvc)
 	
 	// Create error handler
 	errorHandler := errors.NewErrorHandler(loggerSvc)
@@ -135,15 +140,16 @@ func main() {
 	// Note: This is a simplified setup. In a real implementation,
 	// you'd want to use dependency injection container
 	schemaGenerator := schema.NewSchemaGenerator(excelRepo, fileRepo, loggerSvc, nil) // validator will be nil for now
+	dataGenerator := data.NewDataGenerator(excelRepo, loggerSvc, nil) // validator will be nil for now
 
 	// Create CLI
 	cli := NewCLI()
 	cli.logger = appLogger
 
 	// Add commands
-	cli.AddCommand(commands.NewGenerateCommand(schemaGenerator, nil, loggerSvc)) // schemaRepo will be nil for now
-	cli.AddCommand(commands.NewUpdateCommand(schemaGenerator, nil, loggerSvc))
-	cli.AddCommand(commands.NewDataCommand(nil, nil, nil, loggerSvc)) // services will be nil for now
+	cli.AddCommand(commands.NewGenerateCommand(schemaGenerator, schemaRepo, loggerSvc))
+	cli.AddCommand(commands.NewUpdateCommand(schemaGenerator, schemaRepo, loggerSvc))
+	cli.AddCommand(commands.NewDataCommand(dataGenerator, schemaRepo, outputRepo, loggerSvc))
 
 	// Create context
 	ctx := context.Background()

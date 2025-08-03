@@ -9,6 +9,7 @@ import (
 	"excel-schema-generator/cmd/gui/app"
 	"excel-schema-generator/internal/adapters/excel"
 	"excel-schema-generator/internal/adapters/filesystem"
+	"excel-schema-generator/internal/core/data"
 	"excel-schema-generator/internal/core/models"
 	"excel-schema-generator/internal/core/schema"
 	"excel-schema-generator/internal/utils/errors"
@@ -19,7 +20,7 @@ import (
 
 const (
 	AppName        = "Excel Schema Generator"
-	AppVersion     = "2.0.0"
+	AppVersion     = "0.1.0"
 	schemaFileName = "schema.yml"
 	dataFileName   = "output.json"
 )
@@ -55,6 +56,7 @@ func runCLI() {
 	// Create services
 	validator := validation.NewValidationService(loggerSvc)
 	schemaGenerator := schema.NewSchemaGenerator(excelRepo, fileRepo, loggerSvc, validator)
+	dataGenerator := data.NewDataGenerator(excelRepo, loggerSvc, validator)
 
 	// Create error handler
 	errorHandler := errors.NewErrorHandler(loggerSvc)
@@ -64,6 +66,7 @@ func runCLI() {
 		logger:          loggerSvc,
 		errorHandler:    errorHandler,
 		schemaGenerator: schemaGenerator,
+		dataGenerator:   dataGenerator,
 		schemaRepo:      schemaRepo,
 		outputRepo:      outputRepo,
 		fileRepo:        fileRepo,
@@ -130,6 +133,7 @@ type CLIApp struct {
 	logger          *loggerAdapter.LoggerAdapter
 	errorHandler    *errors.ErrorHandler
 	schemaGenerator *schema.SchemaGenerator
+	dataGenerator   *data.DataGenerator
 	schemaRepo      *filesystem.SchemaRepository
 	outputRepo      *filesystem.OutputRepository
 	fileRepo        *filesystem.FileRepository
@@ -172,8 +176,6 @@ func (app *CLIApp) Run(ctx context.Context, args []string) error {
 	switch commandName {
 	case "generate":
 		return app.generateSchema(ctx, folderPath, outputPath)
-	case "update":
-		return app.updateSchema(ctx, folderPath, outputPath)
 	case "data":
 		return app.generateData(ctx, folderPath, outputPath)
 	default:
@@ -182,19 +184,52 @@ func (app *CLIApp) Run(ctx context.Context, args []string) error {
 	}
 }
 
-// generateSchema handles schema generation
+// generateSchema handles schema generation (will create new or update existing)
 func (app *CLIApp) generateSchema(ctx context.Context, folderPath, outputPath string) error {
 	app.logger.Info("Starting schema generation", "folder", folderPath, "output", outputPath)
 
-	// Generate schema
-	schema, err := app.schemaGenerator.GenerateFromFolder(ctx, folderPath)
+	// Determine schema path
+	schemaPath := app.getSchemaOutputPath(outputPath)
+
+	// Check if schema already exists
+	exists, err := app.schemaRepo.Exists(ctx, schemaPath)
 	if err != nil {
-		app.logger.Error("Failed to generate schema", "error", err)
 		return err
 	}
 
-	// Determine output path
-	schemaPath := app.getSchemaOutputPath(outputPath)
+	var schema *models.SchemaInfo
+
+	if exists {
+		// Schema exists, perform update
+		app.logger.Info("Existing schema found, updating", "path", schemaPath)
+		
+		// Load existing schema
+		schema, err = app.schemaRepo.Load(ctx, schemaPath)
+		if err != nil {
+			app.logger.Error("Failed to load existing schema", "path", schemaPath, "error", err)
+			return err
+		}
+
+		// Update schema
+		if err := app.schemaGenerator.UpdateFromFolder(ctx, schema, folderPath); err != nil {
+			app.logger.Error("Failed to update schema", "error", err)
+			return err
+		}
+		
+		fmt.Printf("Schema updated successfully: %s\n", schemaPath)
+	} else {
+		// Schema doesn't exist, create new
+		app.logger.Info("No existing schema found, creating new", "path", schemaPath)
+		
+		// Generate new schema
+		schema, err = app.schemaGenerator.GenerateFromFolder(ctx, folderPath)
+		if err != nil {
+			app.logger.Error("Failed to generate schema", "error", err)
+			return err
+		}
+		
+		fmt.Printf("Schema generated successfully: %s\n", schemaPath)
+	}
 
 	// Ensure output directory exists
 	if err := app.ensureOutputDirectory(schemaPath); err != nil {
@@ -208,7 +243,6 @@ func (app *CLIApp) generateSchema(ctx context.Context, folderPath, outputPath st
 	}
 
 	// Success message
-	fmt.Printf("Schema generated successfully: %s\n", schemaPath)
 	fmt.Printf("Files processed: %d\n", len(schema.Files))
 	fmt.Printf("Sheets found: %d\n", schema.GetSheetCount())
 	app.logger.Info("Schema generation completed", "path", schemaPath, "files", len(schema.Files))
@@ -283,22 +317,11 @@ func (app *CLIApp) generateData(ctx context.Context, folderPath, outputPath stri
 		return err
 	}
 
-	// Create output data structure
-	outputData := models.NewOutputData()
-	outputData.SetMetadata(len(schema.Files), 0, schema.Version)
-
-	// For now, just create empty output with schema information
-	for _, fileInfo := range schema.Files {
-		for _, sheetInfo := range fileInfo.Sheets {
-			// Create field info from data class
-			fields := make([]models.FieldInfo, len(sheetInfo.DataClass))
-			for i, dataClass := range sheetInfo.DataClass {
-				fields[i] = models.NewFieldInfo(dataClass.Name, dataClass.DataType)
-			}
-
-			outputData.AddSchema(sheetInfo.ClassName, fields)
-			outputData.AddData(sheetInfo.ClassName, []interface{}{})
-		}
+	// Generate data from schema using DataGenerator
+	outputData, err := app.dataGenerator.GenerateFromSchema(ctx, schema, folderPath)
+	if err != nil {
+		app.logger.Error("Failed to generate data", "error", err)
+		return err
 	}
 
 	// Determine output path
@@ -359,8 +382,7 @@ func (app *CLIApp) printUsage() {
 	fmt.Println("  excel-schema-generator <command> [flags]")
 	fmt.Println()
 	fmt.Println("Available commands:")
-	fmt.Println("  generate   Generate a new schema from Excel files in a folder")
-	fmt.Println("  update     Update an existing schema with Excel files from a folder")
+	fmt.Println("  generate   Generate or update schema from Excel files (auto-detects existing schema)")
 	fmt.Println("  data       Generate JSON data from Excel files using an existing schema")
 	fmt.Println()
 	fmt.Println("Flags:")
@@ -372,7 +394,7 @@ func (app *CLIApp) printUsage() {
 	fmt.Println()
 	fmt.Println("Examples:")
 	fmt.Println("  excel-schema-generator generate -folder ./excel-files")
-	fmt.Println("  excel-schema-generator update -folder ./excel-files -output ./schemas")
+	fmt.Println("  excel-schema-generator generate -folder ./excel-files -output ./schemas")
 	fmt.Println("  excel-schema-generator data -folder ./excel-files")
 	fmt.Println()
 	fmt.Println("Run without arguments to start the GUI (coming soon).")
